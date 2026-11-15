@@ -1,0 +1,13 @@
+services:
+  db:
+    container_name: sedampah_indah_db
+    image: mysql:lts
+    ports:
+      - 3306:3306
+    env_file:
+      - .env
+    volumes:
+      - sedampah_indah_db:/var/lib/mysql
+
+volumes:
+  sedampah_indah_db:
