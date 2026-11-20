@@ -11,7 +11,6 @@ return new class extends Migration
     Schema::create('camping_areas', function (Blueprint $table) {
       $table->id();
       $table->string('name'); // Contoh: Blok A - View Sunrise
-      $table->string('code', 20)->unique(); // Contoh: BLK-A01
       $table->integer('capacity'); // Kapasitas maksimal tenda/slot per hari
       $table->decimal('price_per_night', 12, 2);
       $table->enum('status', ['available', 'maintenance'])->default('available');

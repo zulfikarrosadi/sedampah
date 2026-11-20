@@ -25,6 +25,7 @@ return new class extends Migration
       $table->timestamps();
 
       $table->index(['check_in_date', 'payment_status']);
+      $table->index(['camping_area_id', 'check_in_date', 'check_out_date'], 'idx_area_dates');
     });
   }
 

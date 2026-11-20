@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ReservationItem extends Model
 {
+  use HasFactory;
+
   protected $fillable = [
     'reservation_id',
     'facility_id',
@@ -15,10 +18,14 @@ class ReservationItem extends Model
     'subtotal',
   ];
 
-  protected $casts = [
-    'price_snapshot' => 'decimal:2',
-    'subtotal' => 'decimal:2',
-  ];
+  protected function casts(): array
+  {
+    return [
+      'qty' => 'integer',
+      'price_snapshot' => 'decimal:2',
+      'subtotal' => 'decimal:2',
+    ];
+  }
 
   public function reservation(): BelongsTo
   {

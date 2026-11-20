@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Ticket extends Model
 {
+  use HasFactory;
+
   protected $fillable = [
     'reservation_id',
     'qr_code_hash',
@@ -15,17 +18,20 @@ class Ticket extends Model
     'checked_in_by',
   ];
 
-  protected $casts = [
-    'is_checked_in' => 'boolean',
-    'checked_in_at' => 'datetime',
-  ];
+  protected function casts(): array
+  {
+    return [
+      'is_checked_in' => 'boolean',
+      'checked_in_at' => 'datetime',
+    ];
+  }
 
   public function reservation(): BelongsTo
   {
     return $this->belongsTo(Reservation::class);
   }
 
-  public function verifier(): BelongsTo
+  public function checkedInBy(): BelongsTo
   {
     return $this->belongsTo(User::class, 'checked_in_by');
   }

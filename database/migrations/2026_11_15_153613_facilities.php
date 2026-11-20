@@ -11,7 +11,7 @@ return new class extends Migration
     Schema::create('facilities', function (Blueprint $table) {
       $table->id();
       $table->string('name'); // Contoh: Tenda Dome Kapasitas 4 Orang
-      $table->enum('category', ['tenda', 'perlengkapan_tidur', 'alat_masak', 'penerangan', 'lainnya']);
+      $table->string('category', 50);
       $table->integer('stock');
       $table->decimal('rental_price', 12, 2);
       $table->string('unit', 20)->default('unit'); // unit, set, pcs

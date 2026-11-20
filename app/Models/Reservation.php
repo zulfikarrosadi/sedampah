@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Reservation extends Model
 {
+  use HasFactory;
+
   protected $fillable = [
     'user_id',
     'camping_area_id',
@@ -24,13 +28,18 @@ class Reservation extends Model
     'paid_at',
   ];
 
-  protected $casts = [
-    'check_in_date' => 'date',
-    'check_out_date' => 'date',
-    'area_price_snapshot' => 'decimal:2',
-    'total_price' => 'decimal:2',
-    'paid_at' => 'datetime',
-  ];
+  protected function casts(): array
+  {
+    return [
+      'check_in_date' => 'date',
+      'check_out_date' => 'date',
+      'duration_nights' => 'integer',
+      'guest_count' => 'integer',
+      'area_price_snapshot' => 'decimal:2',
+      'total_price' => 'decimal:2',
+      'paid_at' => 'datetime',
+    ];
+  }
 
   public function user(): BelongsTo
   {
@@ -42,6 +51,18 @@ class Reservation extends Model
     return $this->belongsTo(CampingArea::class);
   }
 
+  public function areas(): HasMany
+  {
+    return $this->hasMany(ReservationArea::class);
+  }
+
+  public function campingAreas(): BelongsToMany
+  {
+    return $this->belongsToMany(CampingArea::class, 'reservation_areas')
+      ->withPivot(['area_price_snapshot', 'subtotal'])
+      ->withTimestamps();
+  }
+
   public function items(): HasMany
   {
     return $this->hasMany(ReservationItem::class);
@@ -50,5 +71,17 @@ class Reservation extends Model
   public function ticket(): HasOne
   {
     return $this->hasOne(Ticket::class);
+  }
+
+  public function getAreaNamesAttribute(): string
+  {
+    if ($this->relationLoaded('areas') && $this->areas->isNotEmpty()) {
+      return $this->areas
+        ->map(fn(ReservationArea $ra) => $ra->campingArea?->name)
+        ->filter()
+        ->join(', ');
+    }
+
+    return $this->campingArea?->name ?? '-';
   }
 }
