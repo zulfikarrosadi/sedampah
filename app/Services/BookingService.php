@@ -6,9 +6,11 @@ use App\Exceptions\BookingException;
 use App\Models\CampingArea;
 use App\Models\Facility;
 use App\Models\Reservation;
+use App\Models\ReservationArea;
 use App\Models\ReservationItem;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
@@ -34,21 +36,15 @@ class BookingService
   }
 
   /**
-   * Check date-level quota and plot-level availability for the interactive map & booking gate.
+   * Check date-level quota and plot-level availability across both `reservation_areas`
+   * and legacy `reservations.camping_area_id` for the interactive map & booking gate.
    *
-   * @return array{
-   *   available: bool,
-   *   daily_active_count: int,
-   *   max_daily_quota: int,
-   *   remaining_daily_quota: int,
-   *   booked_area_ids: array<int>,
-   *   plots: array<int, array<string, mixed>>
-   * }
+   * @param  int|array<int>|null  $campingAreaIds
    */
   public function checkAvailability(
     string $checkInDate,
     ?string $checkOutDate = null,
-    ?int $campingAreaId = null
+    int|array|null $campingAreaIds = null
   ): array {
     $checkIn = Carbon::parse($checkInDate)->startOfDay();
     $checkOut = $checkOutDate
@@ -65,14 +61,24 @@ class BookingService
       ->whereDate('check_out_date', '>', $checkIn->toDateString())
       ->count();
 
-    $maxQuota = (int) config('camping.max_daily_reservations', 20);
+    $maxQuota = (int) config('camping.max_daily_reservations', 50);
     $remainingQuota = max(0, $maxQuota - $dailyActiveCount);
 
     // 2. Find all camping_area_ids with overlapping active reservations in [checkIn, checkOut)
-    $bookedAreaIds = $this->scopeActiveHold(Reservation::query())
+    $overlappingReservationIds = $this->scopeActiveHold(Reservation::query())
       ->whereDate('check_in_date', '<', $checkOut->toDateString())
       ->whereDate('check_out_date', '>', $checkIn->toDateString())
-      ->pluck('camping_area_id')
+      ->pluck('id');
+
+    $pivotBookedIds = ReservationArea::whereIn('reservation_id', $overlappingReservationIds)
+      ->pluck('camping_area_id');
+
+    $legacyBookedIds = Reservation::whereIn('id', $overlappingReservationIds)
+      ->whereNotNull('camping_area_id')
+      ->pluck('camping_area_id');
+
+    $bookedAreaIds = $pivotBookedIds
+      ->merge($legacyBookedIds)
       ->unique()
       ->values()
       ->all();
@@ -97,9 +103,17 @@ class BookingService
 
     $overallAvailable = $remainingQuota > 0;
 
-    if ($campingAreaId !== null) {
-      $targetPlot = collect($plots)->firstWhere('id', $campingAreaId);
-      $overallAvailable = $targetPlot !== null && $targetPlot['is_available'];
+    if ($campingAreaIds !== null) {
+      $requestedIds = is_array($campingAreaIds) ? $campingAreaIds : [$campingAreaIds];
+      $plotMap = collect($plots)->keyBy('id');
+
+      foreach ($requestedIds as $id) {
+        $target = $plotMap->get((int) $id);
+        if (!$target || !$target['is_available']) {
+          $overallAvailable = false;
+          break;
+        }
+      }
     }
 
     return [
@@ -113,20 +127,13 @@ class BookingService
   }
 
   /**
-   * Calculate exact pricing breakdown before or during reservation creation.
+   * Calculate exact pricing breakdown across 1..N camping areas and optional add-ons.
    *
+   * @param  Collection<int, CampingArea>|CampingArea  $areas
    * @param  array<int, array{facility_id: int, qty: int}>  $addOns
-   * @return array{
-   *   duration_nights: int,
-   *   area_price_snapshot: float,
-   *   area_subtotal: float,
-   *   items_subtotal: float,
-   *   total_price: float,
-   *   resolved_items: array<int, array<string, mixed>>
-   * }
    */
   public function calculateTotal(
-    CampingArea $area,
+    Collection|CampingArea $areas,
     string $checkInDate,
     string $checkOutDate,
     array $addOns = []
@@ -138,9 +145,32 @@ class BookingService
       throw new BookingException('Check-out date must be after check-in date.');
     }
 
+    $areaCollection = $areas instanceof CampingArea ? collect([$areas]) : $areas;
+    if ($areaCollection->isEmpty()) {
+      throw new BookingException('At least one camping plot must be selected.');
+    }
+
     $durationNights = (int) $checkIn->diffInDays($checkOut);
-    $areaPriceSnapshot = (float) $area->price_per_night;
-    $areaSubtotal = round($areaPriceSnapshot * $durationNights, 2);
+
+    $resolvedAreas = [];
+    $areasSubtotal = 0.0;
+    $totalCapacity = 0;
+
+    foreach ($areaCollection as $area) {
+      $priceSnapshot = (float) $area->price_per_night;
+      $subtotal = round($priceSnapshot * $durationNights, 2);
+      $areasSubtotal += $subtotal;
+      $totalCapacity += (int) $area->capacity;
+
+      $resolvedAreas[] = [
+        'camping_area' => $area,
+        'camping_area_id' => $area->id,
+        'area_price_snapshot' => $priceSnapshot,
+        'subtotal' => $subtotal,
+      ];
+    }
+
+    $areasSubtotal = round($areasSubtotal, 2);
 
     // Normalize duplicate facility_id entries if passed
     $normalizedQty = [];
@@ -181,25 +211,29 @@ class BookingService
     }
 
     $itemsSubtotal = round($itemsSubtotal, 2);
-    $totalPrice = round($areaSubtotal + $itemsSubtotal, 2);
+    $totalPrice = round($areasSubtotal + $itemsSubtotal, 2);
 
     return [
       'duration_nights' => $durationNights,
-      'area_price_snapshot' => $areaPriceSnapshot,
-      'area_subtotal' => $areaSubtotal,
+      'total_capacity' => $totalCapacity,
+      'areas_subtotal' => $areasSubtotal,
       'items_subtotal' => $itemsSubtotal,
       'total_price' => $totalPrice,
+      'resolved_areas' => $resolvedAreas,
       'resolved_items' => $resolvedItems,
     ];
   }
 
   /**
-   * Atomically create a reservation with pessimistic row locks (lockForUpdate)
-   * on the target CampingArea and requested Facilities to prevent race conditions.
+   * Atomically create a single- or multi-plot reservation with deterministic row locks
+   * (`lockForUpdate()`) on all target CampingAreas and Facilities.
+   *
+   * Supports both `camping_area_ids` (array) and legacy `camping_area_id` (int).
    *
    * @param  array{
    *   user_id: int,
-   *   camping_area_id: int,
+   *   camping_area_ids?: array<int>,
+   *   camping_area_id?: int,
    *   check_in_date: string,
    *   check_out_date: string,
    *   guest_count?: int,
@@ -215,6 +249,20 @@ class BookingService
     $guestCount = max(1, (int) ($payload['guest_count'] ?? 1));
     $rawItems = $payload['items'] ?? [];
 
+    // Normalize single or multiple area IDs in deterministic ascending order (prevents deadlocks)
+    $rawAreaIds = $payload['camping_area_ids'] ?? (isset($payload['camping_area_id']) ? [$payload['camping_area_id']] : []);
+    $areaIds = collect($rawAreaIds)
+      ->map(fn($id) => (int) $id)
+      ->filter(fn($id) => $id > 0)
+      ->unique()
+      ->sort()
+      ->values()
+      ->all();
+
+    if (empty($areaIds)) {
+      throw new BookingException('Please select at least one camping plot.');
+    }
+
     if ($checkOut->lte($checkIn)) {
       throw new BookingException('Check-out date must be after check-in date.');
     }
@@ -222,27 +270,31 @@ class BookingService
     DB::beginTransaction();
 
     try {
-      // 1. Lock the target camping area row to serialize concurrent bookings on this plot
-      $area = CampingArea::where('id', $payload['camping_area_id'])
+      // 1. Lock all target camping area rows in ascending ID order
+      $lockedAreas = CampingArea::whereIn('id', $areaIds)
+        ->orderBy('id')
         ->lockForUpdate()
-        ->first();
+        ->get();
 
-      if (!$area) {
-        throw new BookingException('Selected camping plot was not found.');
+      if ($lockedAreas->count() !== count($areaIds)) {
+        throw new BookingException('One or more selected camping plots do not exist.');
       }
 
-      if ($area->status !== 'available') {
-        throw new BookingException("Camping plot {$area->name} is currently under maintenance.");
+      foreach ($lockedAreas as $area) {
+        if ($area->status !== 'available') {
+          throw new BookingException("Camping plot {$area->name} is currently under maintenance.");
+        }
       }
 
-      if ($guestCount > $area->capacity) {
+      $combinedCapacity = (int) $lockedAreas->sum('capacity');
+      if ($guestCount > $combinedCapacity) {
         throw new BookingException(
-          "Guest count ({$guestCount}) exceeds {$area->name} maximum capacity ({$area->capacity} guests)."
+          "Guest count ({$guestCount}) exceeds combined plot capacity ({$combinedCapacity} guests). Please add another plot."
         );
       }
 
-      // 2. Verify daily quota & plot-specific overlap inside the locked transaction
-      $maxQuota = (int) config('camping.max_daily_reservations', 20);
+      // 2. Verify daily quota & check date overlap across ALL selected plots inside locked transaction
+      $maxQuota = (int) config('camping.max_daily_reservations', 50);
       $dailyActiveCount = $this->scopeActiveHold(Reservation::query())
         ->whereDate('check_in_date', '<=', $checkIn->toDateString())
         ->whereDate('check_out_date', '>', $checkIn->toDateString())
@@ -253,20 +305,36 @@ class BookingService
         throw new BookingException('Daily campsite reservation quota is full for the selected check-in date.');
       }
 
-      $hasPlotConflict = $this->scopeActiveHold(Reservation::query())
-        ->where('camping_area_id', $area->id)
+      $overlappingReservationIds = $this->scopeActiveHold(Reservation::query())
         ->whereDate('check_in_date', '<', $checkOut->toDateString())
         ->whereDate('check_out_date', '>', $checkIn->toDateString())
         ->lockForUpdate()
-        ->exists();
+        ->pluck('id');
 
-      if ($hasPlotConflict) {
-        throw new BookingException("Camping plot {$area->name} is already reserved for the selected dates.");
+      if ($overlappingReservationIds->isNotEmpty()) {
+        $conflictingPivotAreaIds = ReservationArea::whereIn('reservation_id', $overlappingReservationIds)
+          ->whereIn('camping_area_id', $areaIds)
+          ->pluck('camping_area_id');
+
+        $conflictingLegacyAreaIds = Reservation::whereIn('id', $overlappingReservationIds)
+          ->whereIn('camping_area_id', $areaIds)
+          ->pluck('camping_area_id');
+
+        $conflictingIds = $conflictingPivotAreaIds->merge($conflictingLegacyAreaIds)->unique();
+
+        if ($conflictingIds->isNotEmpty()) {
+          $conflictNames = $lockedAreas
+            ->whereIn('id', $conflictingIds->all())
+            ->pluck('name')
+            ->join(', ');
+
+          throw new BookingException("Camping plot(s) {$conflictNames} already reserved for the selected dates.");
+        }
       }
 
-      // 3. Calculate pricing & lock requested facility rows in deterministic ID order (prevents deadlocks)
+      // 3. Calculate pricing & lock requested facility rows in deterministic ID order
       $pricing = $this->calculateTotal(
-        $area,
+        $lockedAreas,
         $checkIn->toDateString(),
         $checkOut->toDateString(),
         $rawItems
@@ -297,21 +365,33 @@ class BookingService
         }
       }
 
-      // 4. Create reservation record with historical price snapshots
+      // 4. Create reservation header (populating primary plot on header for backward compatibility)
+      $primaryResolvedArea = $pricing['resolved_areas'][0];
+
       $reservation = Reservation::create([
         'user_id' => $payload['user_id'],
-        'camping_area_id' => $area->id,
+        'camping_area_id' => $primaryResolvedArea['camping_area_id'],
         'booking_code' => $this->generateBookingCode($checkIn),
         'check_in_date' => $checkIn->toDateString(),
         'check_out_date' => $checkOut->toDateString(),
         'duration_nights' => $pricing['duration_nights'],
         'guest_count' => $guestCount,
-        'area_price_snapshot' => $pricing['area_price_snapshot'],
+        'area_price_snapshot' => $primaryResolvedArea['area_price_snapshot'],
         'total_price' => $pricing['total_price'],
         'payment_status' => 'pending',
       ]);
 
-      // 5. Persist reservation items & decrement physical facility stock
+      // 5. Persist all selected plots in `reservation_areas`
+      foreach ($pricing['resolved_areas'] as $resolvedArea) {
+        ReservationArea::create([
+          'reservation_id' => $reservation->id,
+          'camping_area_id' => $resolvedArea['camping_area_id'],
+          'area_price_snapshot' => $resolvedArea['area_price_snapshot'],
+          'subtotal' => $resolvedArea['subtotal'],
+        ]);
+      }
+
+      // 6. Persist reservation items & decrement physical facility stock
       foreach ($pricing['resolved_items'] as $resolved) {
         ReservationItem::create([
           'reservation_id' => $reservation->id,
@@ -326,7 +406,7 @@ class BookingService
 
       DB::commit();
 
-      return $reservation->load(['campingArea', 'items.facility', 'user']);
+      return $reservation->load(['campingArea', 'areas.campingArea', 'items.facility', 'user']);
     } catch (Throwable $e) {
       DB::rollBack();
       throw $e;

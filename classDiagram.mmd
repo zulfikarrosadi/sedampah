@@ -1,0 +1,199 @@
+classDiagram
+    direction TB
+
+    %% ========================
+    %% DOMAIN MODELS (ELOQUENT)
+    %% ========================
+    class User {
+        +bigint id
+        +string name
+        +string email
+        +string phone
+        +timestamp email_verified_at
+        +string password
+        +enum role
+        +string remember_token
+        +timestamps
+        +reservations() HasMany
+        +checkedInTickets() HasMany
+    }
+
+    class CampingArea {
+        +bigint id
+        +string name
+        +int capacity
+        +decimal price_per_night
+        +enum status
+        +text description
+        +json layout_coordinates
+        +timestamps
+        +reservations() HasMany
+        +reservationAreas() HasMany
+    }
+
+    class Facility {
+        +bigint id
+        +string name
+        +string category
+        +int stock
+        +decimal rental_price
+        +string unit
+        +text description
+        +string image_path
+        +timestamps
+        +reservationItems() HasMany
+    }
+
+    class Reservation {
+        +bigint id
+        +bigint user_id
+        +bigint camping_area_id
+        +string booking_code
+        +date check_in_date
+        +date check_out_date
+        +int duration_nights
+        +int guest_count
+        +decimal area_price_snapshot
+        +decimal total_price
+        +enum payment_status
+        +string snap_token
+        +timestamp paid_at
+        +timestamps
+        +user() BelongsTo
+        +primaryCampingArea() BelongsTo
+        +areas() HasMany
+        +items() HasMany
+        +ticket() HasOne
+    }
+
+    class ReservationArea {
+        +bigint id
+        +bigint reservation_id
+        +bigint camping_area_id
+        +decimal area_price_snapshot
+        +decimal subtotal
+        +timestamps
+        +reservation() BelongsTo
+        +campingArea() BelongsTo
+    }
+
+    class ReservationItem {
+        +bigint id
+        +bigint reservation_id
+        +bigint facility_id
+        +int qty
+        +decimal price_snapshot
+        +decimal subtotal
+        +timestamps
+        +reservation() BelongsTo
+        +facility() BelongsTo
+    }
+
+    class Ticket {
+        +bigint id
+        +bigint reservation_id
+        +string qr_code_hash
+        +boolean is_checked_in
+        +timestamp checked_in_at
+        +bigint checked_in_by
+        +timestamps
+        +reservation() BelongsTo
+        +checkedInBy() BelongsTo
+    }
+
+    class Gallery {
+        +bigint id
+        +string title
+        +enum category
+        +string image_url
+        +string thumbnail_url
+        +string photographer_name
+        +enum source_provider
+        +string external_id
+        +boolean is_featured
+        +timestamps
+    }
+
+    %% ========================
+    %% SERVICE LAYER
+    %% ========================
+    class BookingService {
+        +checkAvailability(date checkInDate, date checkOutDate) array
+        +createReservation(User user, array campingAreaIds, array items, date checkIn, date checkOut, int guestCount) Reservation
+        +calculateTotal(Collection areas, Collection facilities, int nights) decimal
+        -lockAndValidateAreas(array campingAreaIds, date checkIn, date checkOut) Collection
+        -validateEquipmentStock(array items) void
+    }
+
+    class PaymentService {
+        +createSnapToken(Reservation reservation) string
+        +handleNotification(array payload) void
+        -verifySignature(array payload) boolean
+        -buildItemDetails(Reservation reservation) array
+    }
+
+    class TicketService {
+        +issueTicket(Reservation reservation) Ticket
+        +verifyAndCheckIn(string qrCodeHash, User staff) array
+        +renderPdf(Ticket ticket) Response
+        -generateSecureHash(string bookingCode) string
+    }
+
+    %% ========================
+    %% CONTROLLERS
+    %% ========================
+    class BookingController {
+        +index() View
+        +availability(Request request) JsonResponse
+        +store(Request request) JsonResponse
+    }
+
+    class WebhookController {
+        +handleMidtrans(Request request) JsonResponse
+    }
+
+    class ScannerController {
+        +index() View
+        +verify(Request request) JsonResponse
+    }
+
+    class AdminDashboardController {
+        +storeArea(Request request) RedirectResponse
+        +updateArea(Request request, CampingArea area) RedirectResponse
+        +destroyArea(CampingArea area) RedirectResponse
+        +storeFacility(Request request) RedirectResponse
+        +destroyFacility(Facility facility) RedirectResponse
+        +storeGallery(Request request) RedirectResponse
+        +updateGallery(Request request, Gallery gallery) RedirectResponse
+        +destroyGallery(Gallery gallery) RedirectResponse
+    }
+
+    %% ========================
+    %% MODEL RELATIONSHIPS
+    %% ========================
+    User "1" --> "0..*" Reservation : places
+    User "1" --> "0..*" Ticket : checks in (petugas)
+    CampingArea "0..1" <-- "0..*" Reservation : legacy primary plot
+    CampingArea "1" --> "0..*" ReservationArea : booked in
+    Reservation "1" *-- "1..*" ReservationArea : reserves plots
+    Reservation "1" *-- "0..*" ReservationItem : rents add-ons
+    Facility "1" --> "0..*" ReservationItem : included in
+    Reservation "1" *-- "0..1" Ticket : generates
+
+    %% ========================
+    %% SERVICE & CONTROLLER DEPS
+    %% ========================
+    BookingController ..> BookingService : uses
+    BookingController ..> PaymentService : uses
+    WebhookController ..> PaymentService : delegates webhook
+    ScannerController ..> TicketService : verifies QR
+    AdminDashboardController ..> CampingArea : manages CRUD
+    AdminDashboardController ..> Facility : manages CRUD
+    AdminDashboardController ..> Gallery : manages CRUD & uploads
+
+    BookingService ..> Reservation : creates & locks
+    BookingService ..> CampingArea : locks rows
+    BookingService ..> Facility : checks stock
+    PaymentService ..> Reservation : updates status
+    PaymentService ..> TicketService : triggers on settlement
+    TicketService ..> Ticket : creates & updates

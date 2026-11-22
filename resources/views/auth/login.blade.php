@@ -1,47 +1,67 @@
-<x-guest-layout>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+@extends('layouts.nature')
 
-    <form method="POST" action="{{ route('login') }}">
-        @csrf
+@section('title', 'Sign In — Bukit Embun')
 
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+@section('content')
+<div class="min-h-[78vh] flex items-center justify-center px-4 py-12 bg-gradient-to-b from-emerald-950/5 to-stone-50">
+  <div class="w-full max-w-md bg-white rounded-3xl shadow-xl border border-stone-200/80 p-8">
+    <div class="text-center mb-6">
+      <span class="inline-flex w-12 h-12 rounded-2xl bg-forest-900 text-amber-200 items-center justify-center font-serif font-bold text-xl shadow">BE</span>
+      <h1 class="font-serif text-2xl font-bold text-forest-900 mt-3">Welcome Back</h1>
+      <p class="text-xs text-stone-500 mt-1">Sign in to manage your campsite bookings and QR passes.</p>
+    </div>
+
+    @if (session('status'))
+    <div class="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 font-medium">
+      {{ session('status') }}
+    </div>
+    @endif
+
+    <form method="POST" action="{{ route('login') }}" class="space-y-4">
+      @csrf
+
+      <div>
+        <label for="email" class="block text-xs font-bold uppercase text-stone-600 mb-1">Email Address</label>
+        <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username"
+          class="w-full rounded-xl border-stone-300 text-sm focus:ring-forest-800 focus:border-forest-800">
+        @error('email')
+        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+      </div>
+
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <label for="password" class="block text-xs font-bold uppercase text-stone-600">Password</label>
+          @if (Route::has('password.request'))
+          <a href="{{ route('password.request') }}" class="text-xs text-forest-800 hover:underline">Forgot password?</a>
+          @endif
         </div>
+        <input id="password" type="password" name="password" required autocomplete="current-password"
+          class="w-full rounded-xl border-stone-300 text-sm focus:ring-forest-800 focus:border-forest-800">
+        @error('password')
+        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+      </div>
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
+      <label class="inline-flex items-center gap-2 text-xs text-stone-600 cursor-pointer">
+        <input type="checkbox" name="remember" class="rounded border-stone-300 text-forest-900 focus:ring-forest-800">
+        <span>Remember me</span>
+      </label>
 
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
-
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
-
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" name="remember">
-                <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ __('Remember me') }}</span>
-            </label>
-        </div>
-
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('password.request') }}">
-                    {{ __('Forgot your password?') }}
-                </a>
-            @endif
-
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
-        </div>
+      <button type="submit"
+        class="w-full py-3 rounded-xl bg-terracotta-600 hover:bg-terracotta-700 text-white font-bold text-sm shadow-lg transition cursor-pointer">
+        Sign In &rarr;
+      </button>
     </form>
-</x-guest-layout>
+
+    @if (Route::has('register'))
+    <p class="text-center text-xs text-stone-500 mt-6 pt-5 border-t border-stone-100">
+      New to Bukit Embun?
+      <a href="{{ route('register') }}" class="font-bold text-forest-900 hover:text-terracotta-600 hover:underline">
+        Create a Camper Account
+      </a>
+    </p>
+    @endif
+  </div>
+</div>
+@endsection

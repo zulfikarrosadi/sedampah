@@ -49,7 +49,7 @@ class CampingController extends Controller
   {
     $checkIn = $request->input('check_in', now()->addDay()->toDateString());
     $checkOut = $request->input('check_out', now()->addDays(2)->toDateString());
-    $guestCount = max(1, (int) $request->input('guests', 2));
+    $guestCount = max(1, (int)$request->input('guests', 2));
 
     try {
       $availability = $this->bookingService->checkAvailability($checkIn, $checkOut);
@@ -102,10 +102,11 @@ class CampingController extends Controller
   public function checkout(Request $request): JsonResponse
   {
     $validated = $request->validate([
-      'camping_area_id' => ['required', 'integer', 'exists:camping_areas,id'],
+      'camping_area_ids' => ['required', 'array', 'min:1'],
+      'camping_area_ids.*' => ['required', 'integer', 'distinct', 'exists:camping_areas,id'],
       'check_in_date' => ['required', 'date', 'after_or_equal:today'],
       'check_out_date' => ['required', 'date', 'after:check_in_date'],
-      'guest_count' => ['required', 'integer', 'min:1', 'max:20'],
+      'guest_count' => ['required', 'integer', 'min:1', 'max:100'],
       'items' => ['nullable', 'array'],
       'items.*.facility_id' => ['required_with:items', 'integer', 'exists:facilities,id'],
       'items.*.qty' => ['required_with:items', 'integer', 'min:1', 'max:50'],
@@ -114,7 +115,7 @@ class CampingController extends Controller
     try {
       $reservation = $this->bookingService->createReservation([
         'user_id' => $request->user()->id,
-        'camping_area_id' => $validated['camping_area_id'],
+        'camping_area_ids' => $validated['camping_area_ids'],
         'check_in_date' => $validated['check_in_date'],
         'check_out_date' => $validated['check_out_date'],
         'guest_count' => $validated['guest_count'],
@@ -150,7 +151,12 @@ class CampingController extends Controller
 
   public function myTickets(Request $request): View
   {
-    $reservations = Reservation::with(['campingArea', 'items.facility', 'ticket'])
+    $reservations = Reservation::with([
+      'campingArea',
+      'areas.campingArea',
+      'items.facility',
+      'ticket',
+    ])
       ->where('user_id', $request->user()->id)
       ->latest()
       ->paginate(10);
@@ -160,7 +166,12 @@ class CampingController extends Controller
 
   public function showTicket(Request $request, Ticket $ticket): View
   {
-    $ticket->load(['reservation.user', 'reservation.campingArea', 'reservation.items.facility']);
+    $ticket->load([
+      'reservation.user',
+      'reservation.campingArea',
+      'reservation.areas.campingArea',
+      'reservation.items.facility',
+    ]);
 
     $user = $request->user();
     if ($ticket->reservation->user_id !== $user->id && !$user->isAdmin() && !$user->isPetugas()) {

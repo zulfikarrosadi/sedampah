@@ -54,7 +54,7 @@ class TicketService
    */
   public function renderTicketHtml(Ticket $ticket): string
   {
-    $ticket->loadMissing(['reservation.user', 'reservation.campingArea', 'reservation.items.facility']);
+    $ticket->loadMissing(['reservation.user', 'reservation.campingArea', 'reservation.items.facility', 'reservation.areas.campingArea']);
 
     return View::make('tickets.e-ticket', [
       'ticket' => $ticket,

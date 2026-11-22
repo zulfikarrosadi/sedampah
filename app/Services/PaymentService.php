@@ -29,16 +29,27 @@ class PaymentService
       return $reservation->snap_token;
     }
 
-    $reservation->loadMissing(['user', 'campingArea', 'items.facility']);
+    $reservation->loadMissing(['user', 'campingArea', 'areas.campingArea', 'items.facility']);
 
-    $itemDetails = [
-      [
+    $itemDetails = [];
+
+    if ($reservation->areas->isNotEmpty()) {
+      foreach ($reservation->areas as $resArea) {
+        $itemDetails[] = [
+          'id' => 'AREA-' . $resArea->camping_area_id,
+          'price' => (int) round((float) $resArea->area_price_snapshot),
+          'quantity' => (int) $reservation->duration_nights,
+          'name' => mb_substr($resArea->campingArea->name . ' (' . $reservation->duration_nights . ' malam)', 0, 50),
+        ];
+      }
+    } else {
+      $itemDetails[] = [
         'id' => 'AREA-' . $reservation->camping_area_id,
         'price' => (int) round((float) $reservation->area_price_snapshot),
         'quantity' => (int) $reservation->duration_nights,
         'name' => mb_substr($reservation->campingArea->name . ' (' . $reservation->duration_nights . ' malam)', 0, 50),
-      ],
-    ];
+      ];
+    }
 
     foreach ($reservation->items as $item) {
       $itemDetails[] = [

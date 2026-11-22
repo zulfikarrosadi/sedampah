@@ -1,52 +1,73 @@
-<x-guest-layout>
-    <form method="POST" action="{{ route('register') }}">
-        @csrf
+@extends('layouts.nature')
 
-        <!-- Name -->
-        <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
-            <x-input-error :messages="$errors->get('name')" class="mt-2" />
-        </div>
+@section('title', 'Create Account — Bukit Embun')
 
-        <!-- Email Address -->
-        <div class="mt-4">
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-        </div>
+@section('content')
+<div class="min-h-[82vh] flex items-center justify-center px-4 py-12 bg-gradient-to-b from-emerald-950/5 to-stone-50">
+  <div class="w-full max-w-md bg-white rounded-3xl shadow-xl border border-stone-200/80 p-8">
+    <div class="text-center mb-6">
+      <span class="inline-flex w-12 h-12 rounded-2xl bg-forest-900 text-amber-200 items-center justify-center font-serif font-bold text-xl shadow">BE</span>
+      <h1 class="font-serif text-2xl font-bold text-forest-900 mt-3">Create Camper Account</h1>
+      <p class="text-xs text-stone-500 mt-1">Register to reserve campsite plots and receive QR entry passes.</p>
+    </div>
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
+    <form method="POST" action="{{ route('register') }}" class="space-y-4">
+      @csrf
 
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="new-password" />
+      <div>
+        <label for="name" class="block text-xs font-bold uppercase text-stone-600 mb-1">Full Name</label>
+        <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus autocomplete="name"
+          class="w-full rounded-xl border-stone-300 text-sm focus:ring-forest-800 focus:border-forest-800">
+        @error('name')
+        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+      </div>
 
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
+      <div>
+        <label for="email" class="block text-xs font-bold uppercase text-stone-600 mb-1">Email Address</label>
+        <input id="email" type="email" name="email" value="{{ old('email') }}" required autocomplete="username"
+          class="w-full rounded-xl border-stone-300 text-sm focus:ring-forest-800 focus:border-forest-800">
+        @error('email')
+        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+      </div>
 
-        <!-- Confirm Password -->
-        <div class="mt-4">
-            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
+      <div>
+        <label for="phone" class="block text-xs font-bold uppercase text-stone-600 mb-1">Phone / WhatsApp Number</label>
+        <input id="phone" type="tel" name="phone" value="{{ old('phone') }}" placeholder="081234567890" required autocomplete="tel"
+          class="w-full rounded-xl border-stone-300 text-sm focus:ring-forest-800 focus:border-forest-800">
+        @error('phone')
+        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+      </div>
 
-            <x-text-input id="password_confirmation" class="block mt-1 w-full"
-                            type="password"
-                            name="password_confirmation" required autocomplete="new-password" />
+      <div>
+        <label for="password" class="block text-xs font-bold uppercase text-stone-600 mb-1">Password</label>
+        <input id="password" type="password" name="password" required autocomplete="new-password"
+          class="w-full rounded-xl border-stone-300 text-sm focus:ring-forest-800 focus:border-forest-800">
+        @error('password')
+        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+      </div>
 
-            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
-        </div>
+      <div>
+        <label for="password_confirmation" class="block text-xs font-bold uppercase text-stone-600 mb-1">Confirm Password</label>
+        <input id="password_confirmation" type="password" name="password_confirmation" required autocomplete="new-password"
+          class="w-full rounded-xl border-stone-300 text-sm focus:ring-forest-800 focus:border-forest-800">
+      </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('login') }}">
-                {{ __('Already registered?') }}
-            </a>
-
-            <x-primary-button class="ms-4">
-                {{ __('Register') }}
-            </x-primary-button>
-        </div>
+      <button type="submit"
+        class="w-full py-3 rounded-xl bg-terracotta-600 hover:bg-terracotta-700 text-white font-bold text-sm shadow-lg transition cursor-pointer">
+        Register &amp; Explore Map &rarr;
+      </button>
     </form>
-</x-guest-layout>
+
+    <p class="text-center text-xs text-stone-500 mt-6 pt-5 border-t border-stone-100">
+      Already have an account?
+      <a href="{{ route('login') }}" class="font-bold text-forest-900 hover:text-terracotta-600 hover:underline">
+        Sign In
+      </a>
+    </p>
+  </div>
+</div>
+@endsection

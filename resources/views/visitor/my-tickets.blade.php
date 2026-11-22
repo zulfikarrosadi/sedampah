@@ -24,8 +24,13 @@
                             {{ $reservation->payment_status === 'settled' ? 'bg-emerald-100 text-emerald-900' : ($reservation->payment_status === 'pending' ? 'bg-amber-100 text-amber-900' : 'bg-stone-200 text-stone-600') }}">
             {{ $reservation->payment_status }}
           </span>
+          @if($reservation->areas->count() > 1)
+          <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+            {{ $reservation->areas->count() }} Plots
+          </span>
+          @endif
         </div>
-        <h3 class="font-serif text-lg font-bold text-stone-900 mt-1">{{ $reservation->campingArea->name }}</h3>
+        <h3 class="font-serif text-lg font-bold text-stone-900 mt-1">{{ $reservation->area_names }}</h3>
         <p class="text-xs text-stone-500">
           {{ $reservation->check_in_date->format('d M Y') }} &rarr; {{ $reservation->check_out_date->format('d M Y') }}
           ({{ $reservation->duration_nights }} night) &bull; {{ $reservation->guest_count }} guest(s)

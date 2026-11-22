@@ -30,7 +30,12 @@ class ScannerController extends Controller
 
     return DB::transaction(function () use ($validated, $request) {
       $ticket = Ticket::where('qr_code_hash', $validated['qr_code_hash'])
-        ->with(['reservation.user', 'reservation.campingArea', 'reservation.items.facility'])
+        ->with([
+          'reservation.user',
+          'reservation.campingArea',
+          'reservation.areas.campingArea',
+          'reservation.items.facility',
+        ])
         ->lockForUpdate()
         ->first();
 
@@ -70,6 +75,16 @@ class ScannerController extends Controller
         'checked_in_by' => $request->user()->id,
       ]);
 
+      $plots = $reservation->areas->isNotEmpty()
+        ? $reservation->areas->map(fn($ra) => [
+          'name' => $ra->campingArea->name,
+          'zone' => $ra->campingArea->layout_coordinates['zone'] ?? 'Main Zone',
+        ])->values()->all()
+        : [[
+          'name' => $reservation->campingArea->name,
+          'zone' => $reservation->campingArea->layout_coordinates['zone'] ?? 'Main Zone',
+        ]];
+
       return response()->json([
         'success' => true,
         'message' => 'Check-in verified! Welcome to Bukit Embun.',
@@ -77,8 +92,9 @@ class ScannerController extends Controller
           'booking_code' => $reservation->booking_code,
           'visitor_name' => $reservation->user->name,
           'guest_count' => $reservation->guest_count,
-          'camping_area' => $reservation->campingArea->name,
-          'zone' => $reservation->campingArea->layout_coordinates['zone'] ?? 'Main Zone',
+          'camping_area' => collect($plots)->pluck('name')->join(', '),
+          'zone' => collect($plots)->pluck('zone')->unique()->join(', '),
+          'plots' => $plots,
           'check_in_date' => $reservation->check_in_date->format('d M Y'),
           'check_out_date' => $reservation->check_out_date->format('d M Y'),
           'items' => $reservation->items->map(fn($i) => [

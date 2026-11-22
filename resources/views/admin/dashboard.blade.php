@@ -3,20 +3,42 @@
 @section('title', 'Admin Control Panel — Bukit Embun')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+<div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8"
+  x-data="adminHub({
+         plots: @js($campingAreas),
+         defaultTab: @js($errors->has('image_file') || $errors->has('image_url') ? 'galleries' : ($errors->has('rental_price') && !$errors->has('capacity') ? 'facilities' : 'plots'))
+     })">
+
+  <!-- Header & Export -->
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
       <h1 class="font-serif text-3xl font-bold text-forest-900">Admin Operations Hub</h1>
-      <p class="text-sm text-stone-500">Manage plots, coordinates, equipment inventory, gallery assets, and revenue.</p>
+      <p class="text-sm text-stone-500">Manage 30+ campsite plots, SVG coordinates, equipment stock, local gallery uploads, and transactions.</p>
     </div>
     <a href="{{ route('admin.export.csv') }}" class="px-4 py-2.5 rounded-xl bg-forest-900 text-white text-xs font-semibold shadow hover:bg-forest-800">
       Export Transactions CSV
     </a>
   </div>
 
+  <!-- Flash & Validation Alerts -->
   @if(session('success'))
   <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm font-medium">
     {{ session('success') }}
+  </div>
+  @endif
+  @if(session('error'))
+  <div class="p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 text-sm font-medium">
+    {{ session('error') }}
+  </div>
+  @endif
+  @if($errors->any())
+  <div class="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs space-y-1">
+    <p class="font-bold">Please fix the following input errors:</p>
+    <ul class="list-disc pl-5">
+      @foreach($errors->all() as $err)
+      <li>{{ $err }}</li>
+      @endforeach
+    </ul>
   </div>
   @endif
 
@@ -35,48 +57,260 @@
       <p class="text-2xl font-bold text-amber-600 mt-1">{{ $stats['pending_bookings'] }}</p>
     </div>
     <div class="bg-white p-5 rounded-2xl border border-stone-200">
-      <p class="text-xs font-bold uppercase text-stone-400">Active Plots</p>
+      <p class="text-xs font-bold uppercase text-stone-400">Total Campsite Plots</p>
       <p class="text-2xl font-bold text-stone-900 mt-1">{{ $stats['total_plots'] }}</p>
     </div>
   </div>
 
-  <!-- Camping Plot Coordinates & Pricing Management -->
-  <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
-    <h2 class="font-serif text-xl font-bold text-forest-900 mb-4">Camping Plots &amp; SVG Map Coordinates</h2>
-    <div class="overflow-x-auto">
-      <table class="w-full text-left text-sm">
-        <thead class="text-xs uppercase text-stone-400 border-b">
-          <tr>
-            <th class="py-2">Name</th>
-            <th>Zone</th>
-            <th>Cap.</th>
-            <th>Price/Night</th>
-            <th>X / Y</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-stone-100">
-          @foreach($campingAreas as $area)
-          <tr>
-            <form method="POST" action="{{ route('admin.areas.update', $area) }}">
-              @csrf @method('PATCH')
-              <td class="py-2.5 pr-2"><input name="name" value="{{ $area->name }}" class="rounded-lg border-stone-300 text-xs w-40"></td>
-              <td class="pr-2"><input name="zone" value="{{ $area->layout_coordinates['zone'] ?? '' }}" class="rounded-lg border-stone-300 text-xs w-32"></td>
-              <td class="pr-2"><input type="number" name="capacity" value="{{ $area->capacity }}" class="rounded-lg border-stone-300 text-xs w-16"></td>
-              <td class="pr-2"><input type="number" name="price_per_night" value="{{ (int)$area->price_per_night }}" class="rounded-lg border-stone-300 text-xs w-28"></td>
-              <td class="pr-2 flex gap-1 py-2.5">
-                <input type="number" name="x" value="{{ $area->layout_coordinates['x'] ?? 0 }}" class="rounded-lg border-stone-300 text-xs w-16" title="X">
-                <input type="number" name="y" value="{{ $area->layout_coordinates['y'] ?? 0 }}" class="rounded-lg border-stone-300 text-xs w-16" title="Y">
+  <!-- Navigation Tabs -->
+  <div class="flex flex-wrap gap-2 border-b border-stone-200 pb-3">
+    <button type="button" @click="activeTab = 'plots'"
+      :class="activeTab === 'plots' ? 'bg-forest-900 text-white' : 'bg-white text-stone-700 border border-stone-200'"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+      Camping Plots ({{ $campingAreas->count() }})
+    </button>
+    <button type="button" @click="activeTab = 'facilities'"
+      :class="activeTab === 'facilities' ? 'bg-forest-900 text-white' : 'bg-white text-stone-700 border border-stone-200'"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+      Equipment &amp; Gear ({{ $facilities->count() }})
+    </button>
+    <button type="button" @click="activeTab = 'galleries'"
+      :class="activeTab === 'galleries' ? 'bg-forest-900 text-white' : 'bg-white text-stone-700 border border-stone-200'"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+      Gallery Media ({{ $galleries->count() }})
+    </button>
+    <button type="button" @click="activeTab = 'transactions'"
+      :class="activeTab === 'transactions' ? 'bg-forest-900 text-white' : 'bg-white text-stone-700 border border-stone-200'"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+      Transactions
+    </button>
+  </div>
+
+  <!-- TAB 1: CAMPING PLOTS CRUD + INTERACTIVE COORDINATE PICKER -->
+  <div x-show="activeTab === 'plots'" class="space-y-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
+      <!-- Add New Plot Form -->
+      <div class="lg:col-span-5 space-y-4">
+        <div>
+          <h2 class="font-serif text-xl font-bold text-forest-900">Add New Camping Plot</h2>
+          <p class="text-xs text-stone-500">Click anywhere on the 1200&times;800 preview map to set X &amp; Y coordinates.</p>
+        </div>
+
+        <form method="POST" action="{{ route('admin.areas.store') }}" class="grid grid-cols-2 gap-3 text-xs">
+          @csrf
+          <div class="col-span-2">
+            <label class="block font-bold text-stone-600 mb-1">Plot Name</label>
+            <input name="name" placeholder="e.g., Sunrise Ridge A9" required class="w-full rounded-xl border-stone-300 text-xs">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Zone</label>
+            <select name="zone" class="w-full rounded-xl border-stone-300 text-xs">
+              <option value="Sunrise Ridge">Sunrise Ridge</option>
+              <option value="Pine Grove">Pine Grove</option>
+              <option value="Mist Valley">Mist Valley</option>
+              <option value="Starlight Plateau">Starlight Plateau</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Elevation</label>
+            <input name="elevation" value="1,410 mdpl" class="w-full rounded-xl border-stone-300 text-xs">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Max Guests</label>
+            <input type="number" name="capacity" value="4" min="1" required class="w-full rounded-xl border-stone-300 text-xs">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Price / Night (Rp)</label>
+            <input type="number" name="price_per_night" value="175000" min="0" required class="w-full rounded-xl border-stone-300 text-xs">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Map X (0–1140)</label>
+            <input type="number" name="x" x-model.number="newPlot.x" min="0" max="1140" required class="w-full rounded-xl border-stone-300 text-xs font-mono">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Map Y (0–740)</label>
+            <input type="number" name="y" x-model.number="newPlot.y" min="0" max="740" required class="w-full rounded-xl border-stone-300 text-xs font-mono">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Width (px)</label>
+            <input type="number" name="width" x-model.number="newPlot.width" min="40" max="300" required class="w-full rounded-xl border-stone-300 text-xs font-mono">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Height (px)</label>
+            <input type="number" name="height" x-model.number="newPlot.height" min="35" max="200" required class="w-full rounded-xl border-stone-300 text-xs font-mono">
+          </div>
+          <div class="col-span-2">
+            <label class="block font-bold text-stone-600 mb-1">Status &amp; Description</label>
+            <div class="flex gap-2">
+              <select name="status" class="rounded-xl border-stone-300 text-xs">
+                <option value="available">available</option>
+                <option value="maintenance">maintenance</option>
+              </select>
+              <input name="description" placeholder="Short scenic description..." class="flex-1 rounded-xl border-stone-300 text-xs">
+            </div>
+          </div>
+          <div class="col-span-2 pt-1">
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-terracotta-600 hover:bg-terracotta-700 text-white font-bold text-xs shadow cursor-pointer">
+              + Create Camping Plot
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Interactive 1200x800 Coordinate Picker Canvas -->
+      <div class="lg:col-span-7">
+        <div class="flex items-center justify-between text-xs mb-2">
+          <span class="font-bold text-forest-900">Click Map to Position New Plot</span>
+          <span class="font-mono text-stone-500" x-text="`Target: X=${newPlot.x}, Y=${newPlot.y} (${newPlot.width}×${newPlot.height})`"></span>
+        </div>
+        <div class="rounded-2xl border border-emerald-900/20 bg-[#eaf4ec] overflow-hidden">
+          <svg viewBox="0 0 1200 800" @click="pickCoordinate($event)" class="w-full h-auto cursor-crosshair select-none">
+            <rect x="450" y="65" width="710" height="205" rx="20" fill="#d8f3dc" opacity="0.5" />
+            <rect x="50" y="285" width="595" height="210" rx="20" fill="#d8f3dc" opacity="0.5" />
+            <rect x="670" y="285" width="490" height="210" rx="20" fill="#d8f3dc" opacity="0.5" />
+            <rect x="430" y="540" width="730" height="225" rx="20" fill="#d8f3dc" opacity="0.5" />
+
+            <!-- Existing Plots -->
+            @foreach($campingAreas as $area)
+            @php $c = $area->layout_coordinates; @endphp
+            <g transform="translate({{ $c['x'] ?? 0 }}, {{ $c['y'] ?? 0 }})">
+              <rect width="{{ $c['width'] ?? 100 }}" height="{{ $c['height'] ?? 64 }}" rx="10"
+                fill="{{ $area->status === 'available' ? '#2D6A4F' : '#94a3b8' }}" opacity="0.85" />
+              <text x="{{ ($c['width'] ?? 100) / 2 }}" y="{{ (($c['height'] ?? 64) / 2) + 4 }}"
+                text-anchor="middle" font-size="11" fill="#ffffff" font-weight="bold">
+                {{ \Illuminate\Support\Str::afterLast($area->name, ' ') }}
+              </text>
+            </g>
+            @endforeach
+
+            <!-- Live Golden Preview Marker for New Plot -->
+            <g :transform="`translate(${newPlot.x}, ${newPlot.y})`">
+              <rect :width="newPlot.width" :height="newPlot.height" rx="10"
+                fill="#DDA15E" stroke="#9C5518" stroke-width="4" stroke-dasharray="6 4" />
+              <text :x="newPlot.width / 2" :y="(newPlot.height / 2) + 4"
+                text-anchor="middle" font-size="12" fill="#1B4332" font-weight="bold">NEW</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Existing Plots Table (Inline Update + Delete) -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
+      <h3 class="font-serif text-xl font-bold text-forest-900 mb-4">All Camping Plots</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="uppercase text-stone-400 border-b">
+            <tr>
+              <th class="py-2">Name</th>
+              <th>Zone</th>
+              <th>Cap.</th>
+              <th>Price/Night</th>
+              <th>X / Y / W / H</th>
+              <th>Status</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-stone-100">
+            @foreach($campingAreas as $area)
+            @php $c = $area->layout_coordinates ?? []; @endphp
+            <tr>
+              <td class="py-2 pr-2">
+                <form id="update-area-{{ $area->id }}" method="POST" action="{{ route('admin.areas.update', $area) }}">
+                  @csrf @method('PATCH')
+                </form>
+                <input form="update-area-{{ $area->id }}" name="name" value="{{ $area->name }}" class="rounded-lg border-stone-300 text-xs w-40">
+              </td>
+              <td class="pr-2"><input form="update-area-{{ $area->id }}" name="zone" value="{{ $c['zone'] ?? '' }}" class="rounded-lg border-stone-300 text-xs w-32"></td>
+              <td class="pr-2"><input form="update-area-{{ $area->id }}" type="number" name="capacity" value="{{ $area->capacity }}" class="rounded-lg border-stone-300 text-xs w-14"></td>
+              <td class="pr-2"><input form="update-area-{{ $area->id }}" type="number" name="price_per_night" value="{{ (int) $area->price_per_night }}" class="rounded-lg border-stone-300 text-xs w-24"></td>
+              <td class="pr-2 py-2">
+                <div class="flex gap-1">
+                  <input form="update-area-{{ $area->id }}" type="number" name="x" value="{{ $c['x'] ?? 0 }}" class="rounded-lg border-stone-300 text-xs w-14 font-mono" title="X">
+                  <input form="update-area-{{ $area->id }}" type="number" name="y" value="{{ $c['y'] ?? 0 }}" class="rounded-lg border-stone-300 text-xs w-14 font-mono" title="Y">
+                  <input form="update-area-{{ $area->id }}" type="number" name="width" value="{{ $c['width'] ?? 100 }}" class="rounded-lg border-stone-300 text-xs w-14 font-mono" title="Width">
+                  <input form="update-area-{{ $area->id }}" type="number" name="height" value="{{ $c['height'] ?? 64 }}" class="rounded-lg border-stone-300 text-xs w-14 font-mono" title="Height">
+                </div>
               </td>
               <td class="pr-2">
-                <select name="status" class="rounded-lg border-stone-300 text-xs">
+                <select form="update-area-{{ $area->id }}" name="status" class="rounded-lg border-stone-300 text-xs">
                   <option value="available" @selected($area->status === 'available')>available</option>
                   <option value="maintenance" @selected($area->status === 'maintenance')>maintenance</option>
                 </select>
               </td>
-              <td><button class="px-3 py-1.5 rounded-lg bg-forest-900 text-white text-xs font-semibold">Save</button></td>
-            </form>
+              <td class="text-right whitespace-nowrap space-x-1">
+                <button form="update-area-{{ $area->id }}" type="submit" class="px-3 py-1.5 rounded-lg bg-forest-900 text-white font-semibold hover:bg-forest-800">Save</button>
+                <form method="POST" action="{{ route('admin.areas.destroy', $area) }}" class="inline" onsubmit="return confirm('Delete plot {{ $area->name }}?')">
+                  @csrf @method('DELETE')
+                  <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-700 font-semibold hover:bg-red-100">Delete</button>
+                </form>
+              </td>
+            </tr>
+            @endforeach
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: EQUIPMENT & GEAR CRUD -->
+  <div x-show="activeTab === 'facilities'" x-cloak class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 space-y-6">
+    <div>
+      <h2 class="font-serif text-xl font-bold text-forest-900">Equipment &amp; Rental Inventory</h2>
+      <p class="text-xs text-stone-500">Add new camping gear, adjust physical stock, or update nightly rental rates.</p>
+    </div>
+
+    <!-- Create Equipment Form -->
+    <form method="POST" action="{{ route('admin.facilities.store') }}" class="grid grid-cols-1 sm:grid-cols-6 gap-3 bg-stone-50 p-4 rounded-xl border border-stone-200/70 text-xs">
+      @csrf
+      <input name="name" placeholder="Equipment Name (e.g., Hammock Double)" required class="sm:col-span-2 rounded-xl border-stone-300 text-xs">
+      <select name="category" class="rounded-xl border-stone-300 text-xs">
+        <option value="tent">tent</option>
+        <option value="equipment">equipment</option>
+        <option value="lamp">lamp</option>
+        <option value="cooking">cooking</option>
+      </select>
+      <input type="number" name="stock" placeholder="Stock" min="0" required class="rounded-xl border-stone-300 text-xs">
+      <input type="number" name="rental_price" placeholder="Price (Rp)" min="0" required class="rounded-xl border-stone-300 text-xs">
+      <div class="flex gap-2">
+        <input name="unit" value="unit" placeholder="Unit" required class="w-20 rounded-xl border-stone-300 text-xs">
+        <button type="submit" class="flex-1 rounded-xl bg-terracotta-600 text-white font-bold hover:bg-terracotta-700">+ Add</button>
+      </div>
+    </form>
+
+    <!-- Equipment Table -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="uppercase text-stone-400 border-b">
+          <tr>
+            <th class="py-2">Equipment Name</th>
+            <th>Category</th>
+            <th>Stock</th>
+            <th>Rental Price (Rp)</th>
+            <th>Unit</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-stone-100">
+          @foreach($facilities as $facility)
+          <tr>
+            <td class="py-2.5 pr-2">
+              <form id="update-fac-{{ $facility->id }}" method="POST" action="{{ route('admin.facilities.update', $facility) }}">
+                @csrf @method('PATCH')
+              </form>
+              <input form="update-fac-{{ $facility->id }}" name="name" value="{{ $facility->name }}" class="rounded-lg border-stone-300 text-xs w-60">
+            </td>
+            <td class="pr-2"><input form="update-fac-{{ $facility->id }}" name="category" value="{{ $facility->category }}" class="rounded-lg border-stone-300 text-xs w-28"></td>
+            <td class="pr-2"><input form="update-fac-{{ $facility->id }}" type="number" name="stock" value="{{ $facility->stock }}" class="rounded-lg border-stone-300 text-xs w-20"></td>
+            <td class="pr-2"><input form="update-fac-{{ $facility->id }}" type="number" name="rental_price" value="{{ (int) $facility->rental_price }}" class="rounded-lg border-stone-300 text-xs w-28"></td>
+            <td class="pr-2"><input form="update-fac-{{ $facility->id }}" name="unit" value="{{ $facility->unit }}" class="rounded-lg border-stone-300 text-xs w-20"></td>
+            <td class="text-right whitespace-nowrap space-x-1">
+              <button form="update-fac-{{ $facility->id }}" type="submit" class="px-3 py-1.5 rounded-lg bg-forest-900 text-white font-semibold hover:bg-forest-800">Save</button>
+              <form method="POST" action="{{ route('admin.facilities.destroy', $facility) }}" class="inline" onsubmit="return confirm('Delete {{ $facility->name }}?')">
+                @csrf @method('DELETE')
+                <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-700 font-semibold hover:bg-red-100">Delete</button>
+              </form>
+            </td>
           </tr>
           @endforeach
         </tbody>
@@ -84,69 +318,111 @@
     </div>
   </div>
 
-  <!-- Equipment Stock & Gallery Asset Management -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    <!-- Equipment Stock -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
-      <h2 class="font-serif text-xl font-bold text-forest-900 mb-4">Equipment Stock &amp; Rental Rates</h2>
-      <div class="space-y-3">
-        @foreach($facilities as $facility)
-        <form method="POST" action="{{ route('admin.facilities.update', $facility) }}" class="flex items-center justify-between gap-2 text-xs border-b border-stone-100 pb-2.5">
-          @csrf @method('PATCH')
-          <span class="font-semibold text-stone-800 flex-1">{{ $facility->name }}</span>
-          <input type="number" name="stock" value="{{ $facility->stock }}" class="w-16 rounded-lg border-stone-300 text-xs" title="Stock">
-          <input type="number" name="rental_price" value="{{ (int)$facility->rental_price }}" class="w-24 rounded-lg border-stone-300 text-xs" title="Price">
-          <button class="px-3 py-1.5 rounded-lg bg-stone-800 text-white font-semibold">Update</button>
-        </form>
-        @endforeach
+  <!-- TAB 3: GALLERY MEDIA UPLOAD & CRUD -->
+  <div x-show="activeTab === 'galleries'" x-cloak class="grid grid-cols-1 lg:grid-cols-12 gap-8"
+    x-data="{ uploadMode: 'file', previewUrl: null }">
+
+    <!-- Upload Form -->
+    <div class="lg:col-span-5 bg-white rounded-2xl p-6 shadow-sm border border-stone-200 space-y-4">
+      <h2 class="font-serif text-xl font-bold text-forest-900">Upload Gallery Photo</h2>
+
+      <div class="flex gap-2 text-xs font-semibold">
+        <button type="button" @click="uploadMode = 'file'"
+          :class="uploadMode === 'file' ? 'bg-forest-900 text-white' : 'bg-stone-100 text-stone-700'"
+          class="px-3 py-1.5 rounded-xl">Upload Local Image</button>
+        <button type="button" @click="uploadMode = 'url'"
+          :class="uploadMode === 'url' ? 'bg-forest-900 text-white' : 'bg-stone-100 text-stone-700'"
+          class="px-3 py-1.5 rounded-xl">External Stock URL</button>
       </div>
+
+      <form method="POST" action="{{ route('admin.galleries.store') }}" enctype="multipart/form-data" class="space-y-3 text-xs">
+        @csrf
+        <input type="hidden" name="upload_mode" :value="uploadMode">
+
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Photo Title</label>
+          <input name="title" placeholder="e.g., Sunrise Mist at Ridge A1" required class="w-full rounded-xl border-stone-300 text-xs">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Category</label>
+            <select name="category" class="w-full rounded-xl border-stone-300 text-xs">
+              <option value="camping_area">camping_area</option>
+              <option value="ambiance">ambiance</option>
+              <option value="facilities">facilities</option>
+              <option value="hero">hero</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Photographer / Credit</label>
+            <input name="photographer_name" placeholder="Bukit Embun Team" class="w-full rounded-xl border-stone-300 text-xs">
+          </div>
+        </div>
+
+        <!-- File Upload Input -->
+        <div x-show="uploadMode === 'file'" class="space-y-2">
+          <label class="block font-bold text-stone-600">Select Image File (JPG, PNG, WEBP &bull; Max 5MB)</label>
+          <input type="file" name="image_file" accept="image/jpeg,image/png,image/webp"
+            @change="previewUrl = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null"
+            class="w-full text-xs file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-emerald-50 file:text-forest-900 file:font-semibold">
+          <img x-show="previewUrl" :src="previewUrl" class="w-full h-40 object-cover rounded-xl border border-stone-200 mt-2">
+        </div>
+
+        <!-- External URL Input -->
+        <div x-show="uploadMode === 'url'" class="space-y-2">
+          <input name="image_url" placeholder="Full Image URL (https://...)" class="w-full rounded-xl border-stone-300 text-xs">
+          <input name="thumbnail_url" placeholder="Thumbnail URL (optional)" class="w-full rounded-xl border-stone-300 text-xs">
+        </div>
+
+        <label class="flex items-center gap-2 pt-1 cursor-pointer">
+          <input type="checkbox" name="is_featured" value="1" class="rounded border-stone-300 text-forest-900">
+          <span class="font-semibold text-stone-700">Set as Featured (Hero / Top Highlight)</span>
+        </label>
+
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-terracotta-600 hover:bg-terracotta-700 text-white font-bold text-xs shadow cursor-pointer">
+          Publish to Gallery
+        </button>
+      </form>
     </div>
 
-    <!-- Gallery Asset CRUD -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
-      <h2 class="font-serif text-xl font-bold text-forest-900 mb-4">Gallery Assets</h2>
-      <form method="POST" action="{{ route('admin.galleries.store') }}" class="grid grid-cols-2 gap-2.5 text-xs mb-5 bg-stone-50 p-3.5 rounded-xl">
-        @csrf
-        <input name="title" placeholder="Photo Title" required class="rounded-lg border-stone-300 col-span-2">
-        <select name="category" class="rounded-lg border-stone-300">
-          <option value="camping_area">camping_area</option>
-          <option value="ambiance">ambiance</option>
-          <option value="facilities">facilities</option>
-          <option value="hero">hero</option>
-        </select>
-        <select name="source_provider" class="rounded-lg border-stone-300">
-          <option value="unsplash">unsplash</option>
-          <option value="pexels">pexels</option>
-          <option value="pixabay">pixabay</option>
-        </select>
-        <input name="image_url" placeholder="Full Image URL" required class="rounded-lg border-stone-300 col-span-2">
-        <input name="thumbnail_url" placeholder="Thumbnail URL" required class="rounded-lg border-stone-300 col-span-2">
-        <input name="photographer_name" placeholder="Photographer Name" required class="rounded-lg border-stone-300">
-        <button class="rounded-lg bg-terracotta-600 text-white font-semibold py-2">Add Photo</button>
-      </form>
-
-      <div class="max-h-64 overflow-y-auto divide-y divide-stone-100 text-xs">
+    <!-- Gallery Grid -->
+    <div class="lg:col-span-7 bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
+      <h2 class="font-serif text-xl font-bold text-forest-900 mb-4">Published Gallery Assets</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[560px] overflow-y-auto pr-1">
         @foreach($galleries as $photo)
-        <div class="py-2 flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <img src="{{ $photo->thumbnail_url }}" class="w-10 h-10 rounded-lg object-cover">
+        <div class="rounded-xl border border-stone-200 overflow-hidden bg-stone-50 flex flex-col">
+          <img src="{{ $photo->thumbnail_url }}" alt="{{ $photo->title }}" class="w-full h-36 object-cover">
+          <div class="p-3 flex-1 flex flex-col justify-between text-xs">
             <div>
-              <p class="font-semibold text-stone-900">{{ $photo->title }}</p>
-              <p class="text-stone-400">{{ $photo->category }} &bull; {{ $photo->photographer_name }}</p>
+              <div class="flex items-center justify-between gap-1">
+                <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-bold uppercase text-[10px]">{{ $photo->category }}</span>
+                <span class="text-[10px] uppercase text-stone-400 font-semibold">{{ $photo->source_provider }}</span>
+              </div>
+              <p class="font-bold text-stone-900 mt-1.5">{{ $photo->title }}</p>
+              <p class="text-[11px] text-stone-500">By {{ $photo->photographer_name }}</p>
+            </div>
+            <div class="flex items-center justify-between pt-3 mt-2 border-t border-stone-200/70">
+              <form method="POST" action="{{ route('admin.galleries.toggle-featured', $photo) }}">
+                @csrf @method('PATCH')
+                <button type="submit" class="font-semibold {{ $photo->is_featured ? 'text-amber-600' : 'text-stone-400 hover:text-stone-700' }}">
+                  {{ $photo->is_featured ? '★ Featured' : '☆ Feature' }}
+                </button>
+              </form>
+              <form method="POST" action="{{ route('admin.galleries.destroy', $photo) }}" onsubmit="return confirm('Delete this gallery photo?')">
+                @csrf @method('DELETE')
+                <button type="submit" class="text-red-600 hover:underline font-semibold">Delete</button>
+              </form>
             </div>
           </div>
-          <form method="POST" action="{{ route('admin.galleries.destroy', $photo) }}">
-            @csrf @method('DELETE')
-            <button class="text-red-600 hover:underline font-semibold">Delete</button>
-          </form>
         </div>
         @endforeach
       </div>
     </div>
   </div>
 
-  <!-- Real-Time Transaction Monitoring -->
-  <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
+  <!-- TAB 4: RECENT TRANSACTIONS -->
+  <div x-show="activeTab === 'transactions'" x-cloak class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
     <h2 class="font-serif text-xl font-bold text-forest-900 mb-4">Recent Transactions</h2>
     <div class="overflow-x-auto">
       <table class="w-full text-left text-xs">
@@ -154,8 +430,9 @@
           <tr>
             <th class="py-2">Booking Code</th>
             <th>Visitor</th>
-            <th>Plot</th>
+            <th>Plots</th>
             <th>Dates</th>
+            <th>Guests</th>
             <th>Total</th>
             <th>Status</th>
             <th>Check-In</th>
@@ -166,8 +443,9 @@
           <tr>
             <td class="py-3 font-mono font-bold text-forest-900">{{ $res->booking_code }}</td>
             <td>{{ $res->user->name }}</td>
-            <td>{{ $res->campingArea->name }}</td>
+            <td class="font-medium">{{ $res->area_names }}</td>
             <td>{{ $res->check_in_date->format('d M') }} – {{ $res->check_out_date->format('d M Y') }}</td>
+            <td>{{ $res->guest_count }} pax</td>
             <td class="font-semibold">Rp {{ number_format($res->total_price, 0, ',', '.') }}</td>
             <td>
               <span class="px-2 py-0.5 rounded-full font-bold uppercase
@@ -185,3 +463,30 @@
   </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+  function adminHub(config) {
+    return {
+      activeTab: config.defaultTab || 'plots',
+      newPlot: {
+        x: 100,
+        y: 160,
+        width: 110,
+        height: 64
+      },
+      pickCoordinate(event) {
+        const svg = event.currentTarget;
+        const rect = svg.getBoundingClientRect();
+        const scaleX = 1200 / rect.width;
+        const scaleY = 800 / rect.height;
+        const clickX = Math.round((event.clientX - rect.left) * scaleX - (this.newPlot.width / 2));
+        const clickY = Math.round((event.clientY - rect.top) * scaleY - (this.newPlot.height / 2));
+
+        this.newPlot.x = Math.max(0, Math.min(1200 - this.newPlot.width, clickX));
+        this.newPlot.y = Math.max(0, Math.min(800 - this.newPlot.height, clickY));
+      }
+    };
+  }
+</script>
+@endpush

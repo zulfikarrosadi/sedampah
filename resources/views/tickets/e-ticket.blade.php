@@ -54,9 +54,20 @@
             <p class="text-stone-500 text-xs">{{ $reservation->guest_count }} Guest(s)</p>
           </div>
           <div>
-            <p class="text-xs uppercase text-stone-400 font-semibold">Campsite Plot</p>
+            <p class="text-xs uppercase text-stone-400 font-semibold">
+              Campsite Plot{{ $reservation->areas->count() > 1 ? 's (' . $reservation->areas->count() . ')' : '' }}
+            </p>
+            @if($reservation->areas->isNotEmpty())
+            @foreach($reservation->areas as $resArea)
+            <p class="font-bold text-emerald-900 text-sm leading-snug">
+              {{ $resArea->campingArea->name }}
+              <span class="text-stone-400 font-normal text-xs">({{ $resArea->campingArea->layout_coordinates['zone'] ?? 'Main Zone' }})</span>
+            </p>
+            @endforeach
+            @else
             <p class="font-bold text-emerald-900 text-base">{{ $reservation->campingArea->name }}</p>
             <p class="text-stone-500 text-xs">{{ $reservation->campingArea->layout_coordinates['zone'] ?? 'Main Zone' }}</p>
+            @endif
           </div>
           <div>
             <p class="text-xs uppercase text-stone-400 font-semibold">Check-In</p>
@@ -96,7 +107,7 @@
 
   <script>
     new QRCode(document.getElementById("ticket-qrcode"), {
-      text: @json($ticket - > qr_code_hash),
+      text: @json($ticket->qr_code_hash),
       width: 180,
       height: 180,
       colorDark: "#1B4332",

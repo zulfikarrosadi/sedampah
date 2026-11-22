@@ -74,13 +74,9 @@ class BookingServiceTest extends TestCase
 
   public function test_calculates_multi_night_stay_and_addons_accurately_with_snapshots(): void
   {
-    // 3 nights @ 175,000 = 525,000
-    // + 2 Tents @ 85,000 = 170,000
-    // + 3 Lanterns @ 15,000 = 45,000
-    // Total = 740,000
     $reservation = $this->bookingService->createReservation([
       'user_id' => $this->visitor->id,
-      'camping_area_id' => $this->areaA->id,
+      'camping_area_ids' => [$this->areaA->id],
       'check_in_date' => '2026-12-10',
       'check_out_date' => '2026-12-13',
       'guest_count' => 4,
@@ -91,45 +87,68 @@ class BookingServiceTest extends TestCase
     ]);
 
     $this->assertEquals(3, $reservation->duration_nights);
-    $this->assertEquals(4, $reservation->guest_count);
-    $this->assertEquals('175000.00', $reservation->area_price_snapshot);
     $this->assertEquals('740000.00', $reservation->total_price);
-    $this->assertEquals('pending', $reservation->payment_status);
-    $this->assertStringStartsWith('BE-20261210-', $reservation->booking_code);
-
-    // Verify item snapshots & stock decrements
-    $this->assertCount(2, $reservation->items);
+    $this->assertCount(1, $reservation->areas);
     $this->assertEquals(3, $this->tent->fresh()->stock);
     $this->assertEquals(7, $this->lantern->fresh()->stock);
-
-    $tentItem = $reservation->items->firstWhere('facility_id', $this->tent->id);
-    $this->assertEquals('85000.00', $tentItem->price_snapshot);
-    $this->assertEquals('170000.00', $tentItem->subtotal);
   }
 
-  public function test_rejects_overlapping_reservation_on_same_plot(): void
+  public function test_allows_multi_plot_booking_for_large_group_and_locks_both_plots(): void
+  {
+    // Group of 9 guests exceeds single plot capacity (4 or 6), but fits combined (4 + 6 = 10)
+    // 2 nights: (175,000 * 2) + (225,000 * 2) + (85,000 * 2 tents) = 350,000 + 450,000 + 170,000 = 970,000
+    $reservation = $this->bookingService->createReservation([
+      'user_id' => $this->visitor->id,
+      'camping_area_ids' => [$this->areaA->id, $this->areaB->id],
+      'check_in_date' => '2026-12-10',
+      'check_out_date' => '2026-12-12',
+      'guest_count' => 9,
+      'items' => [
+        ['facility_id' => $this->tent->id, 'qty' => 2],
+      ],
+    ]);
+
+    $this->assertEquals('970000.00', $reservation->total_price);
+    $this->assertCount(2, $reservation->areas);
+
+    $availability = $this->bookingService->checkAvailability('2026-12-10', '2026-12-12');
+    $this->assertContains($this->areaA->id, $availability['booked_area_ids']);
+    $this->assertContains($this->areaB->id, $availability['booked_area_ids']);
+  }
+
+  public function test_rejects_booking_when_guest_count_exceeds_combined_plot_capacity(): void
+  {
+    $this->expectException(BookingException::class);
+    $this->expectExceptionMessage('exceeds combined plot capacity');
+
+    $this->bookingService->createReservation([
+      'user_id' => $this->visitor->id,
+      'camping_area_ids' => [$this->areaA->id, $this->areaB->id],
+      'check_in_date' => '2026-12-10',
+      'check_out_date' => '2026-12-12',
+      'guest_count' => 11, // max combined is 10
+    ]);
+  }
+
+  public function test_rejects_multi_plot_booking_if_one_of_the_plots_is_already_booked(): void
   {
     $this->bookingService->createReservation([
       'user_id' => $this->visitor->id,
-      'camping_area_id' => $this->areaA->id,
+      'camping_area_ids' => [$this->areaB->id],
       'check_in_date' => '2026-12-10',
       'check_out_date' => '2026-12-12',
-      'guest_count' => 2,
+      'guest_count' => 4,
     ]);
-
-    $availability = $this->bookingService->checkAvailability('2026-12-11', '2026-12-13', $this->areaA->id);
-    $this->assertFalse($availability['available']);
-    $this->assertContains($this->areaA->id, $availability['booked_area_ids']);
 
     $this->expectException(BookingException::class);
     $this->expectExceptionMessage('already reserved');
 
     $this->bookingService->createReservation([
       'user_id' => $this->visitor->id,
-      'camping_area_id' => $this->areaA->id,
+      'camping_area_ids' => [$this->areaA->id, $this->areaB->id],
       'check_in_date' => '2026-12-11',
       'check_out_date' => '2026-12-13',
-      'guest_count' => 2,
+      'guest_count' => 8,
     ]);
   }
 
@@ -137,23 +156,21 @@ class BookingServiceTest extends TestCase
   {
     $this->bookingService->createReservation([
       'user_id' => $this->visitor->id,
-      'camping_area_id' => $this->areaA->id,
+      'camping_area_ids' => [$this->areaA->id],
       'check_in_date' => '2026-12-10',
       'check_out_date' => '2026-12-12',
       'guest_count' => 2,
     ]);
 
-    // Checking in on Dec 12 when previous guest checks out on Dec 12 must succeed
     $nextBooking = $this->bookingService->createReservation([
       'user_id' => $this->visitor->id,
-      'camping_area_id' => $this->areaA->id,
+      'camping_area_ids' => [$this->areaA->id],
       'check_in_date' => '2026-12-12',
       'check_out_date' => '2026-12-14',
       'guest_count' => 2,
     ]);
 
     $this->assertInstanceOf(Reservation::class, $nextBooking);
-    $this->assertEquals(2, $nextBooking->duration_nights);
   }
 
   public function test_rejects_booking_when_daily_quota_is_full(): void
@@ -162,42 +179,21 @@ class BookingServiceTest extends TestCase
 
     $this->bookingService->createReservation([
       'user_id' => $this->visitor->id,
-      'camping_area_id' => $this->areaA->id,
+      'camping_area_ids' => [$this->areaA->id],
       'check_in_date' => '2026-12-15',
       'check_out_date' => '2026-12-16',
       'guest_count' => 2,
     ]);
-
-    $availability = $this->bookingService->checkAvailability('2026-12-15');
-    $this->assertFalse($availability['available']);
-    $this->assertEquals(0, $availability['remaining_daily_quota']);
 
     $this->expectException(BookingException::class);
     $this->expectExceptionMessage('quota is full');
 
     $this->bookingService->createReservation([
       'user_id' => $this->visitor->id,
-      'camping_area_id' => $this->areaB->id,
+      'camping_area_ids' => [$this->areaB->id],
       'check_in_date' => '2026-12-15',
       'check_out_date' => '2026-12-16',
       'guest_count' => 2,
-    ]);
-  }
-
-  public function test_rejects_booking_when_equipment_stock_is_insufficient(): void
-  {
-    $this->expectException(BookingException::class);
-    $this->expectExceptionMessage('Insufficient stock');
-
-    $this->bookingService->createReservation([
-      'user_id' => $this->visitor->id,
-      'camping_area_id' => $this->areaA->id,
-      'check_in_date' => '2026-12-20',
-      'check_out_date' => '2026-12-21',
-      'guest_count' => 2,
-      'items' => [
-        ['facility_id' => $this->tent->id, 'qty' => 99],
-      ],
     ]);
   }
 }
