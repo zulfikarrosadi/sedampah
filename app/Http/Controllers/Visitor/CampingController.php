@@ -141,6 +141,11 @@ class CampingController extends Controller
         'data' => null,
       ], 422);
     } catch (Throwable $e) {
+      \Illuminate\Support\Facades\Log::error('Checkout failed', [
+        'message' => $e->getMessage(),
+        'file' => $e->getFile() . ':' . $e->getLine(),
+        'trace' => $e->getTraceAsString(),
+      ]);
       return response()->json([
         'success' => false,
         'message' => 'Unable to process checkout right now.',
