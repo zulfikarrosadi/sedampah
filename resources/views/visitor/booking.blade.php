@@ -48,203 +48,205 @@
     </div>
   </div>
 
+  <!-- Full-Width Interactive Campsite Map -->
+  <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-stone-200/80 mb-8">
+    <!-- Header + Zoom Controls -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+      <div>
+        <h2 class="font-serif text-2xl font-bold text-forest-900">Bukit Embun Campsite Map</h2>
+        <p class="text-xs text-stone-500">Click one or multiple green plots to accommodate your group size.</p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Zoom Controls -->
+        <div class="inline-flex rounded-xl border border-stone-200 bg-stone-50 p-0.5 text-xs font-semibold">
+          <button type="button" @click="zoom = 1" :class="zoom === 1 ? 'bg-forest-900 text-white' : 'text-stone-600'" class="px-2.5 py-1 rounded-lg transition">100%</button>
+          <button type="button" @click="zoom = 1.25" :class="zoom === 1.25 ? 'bg-forest-900 text-white' : 'text-stone-600'" class="px-2.5 py-1 rounded-lg transition">125%</button>
+          <button type="button" @click="zoom = 1.5" :class="zoom === 1.5 ? 'bg-forest-900 text-white' : 'text-stone-600'" class="px-2.5 py-1 rounded-lg transition">150%</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zone Filter Pills & Legend -->
+    <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-stone-100 mb-4">
+      <div class="flex flex-wrap gap-1.5 text-xs font-semibold">
+        <template x-for="zone in zones" :key="zone">
+          <button type="button"
+            @click="activeZone = zone"
+            :class="activeZone === zone ? 'bg-forest-900 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'"
+            class="px-3 py-1.5 rounded-xl transition cursor-pointer"
+            x-text="zone"></button>
+        </template>
+      </div>
+
+      <div class="flex items-center gap-4 text-xs font-medium">
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-[#2D6A4F] inline-block"></span> Available</span>
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-[#DDA15E] ring-2 ring-amber-700 inline-block"></span> Selected</span>
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-stone-300 inline-block"></span> Booked / Maint.</span>
+      </div>
+    </div>
+
+    <!-- Hover Tooltip Banner -->
+    <div class="min-h-[36px] mb-3 px-3.5 py-2 rounded-xl bg-stone-50 border border-stone-200/70 flex items-center justify-between text-xs">
+      <template x-if="hoveredPlot">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="font-bold text-forest-900" x-text="hoveredPlot.name"></span>
+          <span class="text-stone-500" x-text="hoveredPlot.layout_coordinates.zone"></span>
+          <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-semibold" x-text="`Max ${hoveredPlot.capacity} guests`"></span>
+          <span class="font-bold text-terracotta-600" x-text="formatRupiah(hoveredPlot.price_per_night) + ' / night'"></span>
+        </div>
+      </template>
+      <template x-if="!hoveredPlot">
+        <span class="text-stone-400">Hover or tap any plot on the map to inspect elevation, capacity, and nightly rate.</span>
+      </template>
+    </div>
+
+    <!-- Full-Width Responsive / Zoomable 1200x800 SVG Canvas -->
+    <div class="relative overflow-auto max-h-[760px] rounded-2xl border border-emerald-900/20 bg-[#eaf4ec]">
+      <div :style="zoom === 1 ? 'width: 100%;' : `width: ${zoom * 100}%;`" class="transition-all duration-200">
+        <svg viewBox="0 0 1200 800" class="w-full h-auto block select-none" role="img" aria-label="Bukit Embun 1200x800 Interactive Campsite Map">
+          <defs>
+            <pattern id="bookedHatch" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+              <line x1="0" y1="0" x2="0" y2="10" stroke="#94a3b8" stroke-width="3.5" />
+            </pattern>
+          </defs>
+
+          <!-- Topographic Contour Lines -->
+          <path d="M 0,80 Q 450,25 1200,75" fill="none" stroke="#b7e4c7" stroke-width="2.5" stroke-dasharray="8 6" />
+          <path d="M 0,275 Q 600,245 1200,285" fill="none" stroke="#b7e4c7" stroke-width="2.5" stroke-dasharray="8 6" />
+          <path d="M 0,520 Q 580,490 1200,530" fill="none" stroke="#b7e4c7" stroke-width="2.5" stroke-dasharray="8 6" />
+
+          <!-- Zone Region Backdrops -->
+          <rect x="450" y="65" width="710" height="205" rx="20" fill="#d8f3dc" opacity="0.45" />
+          <text x="470" y="85" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONE A &bull; SUNRISE RIDGE (1,425 MDPL)</text>
+
+          <rect x="50" y="285" width="595" height="210" rx="20" fill="#d8f3dc" opacity="0.45" />
+          <text x="70" y="305" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONE B &bull; PINE GROVE WOODLAND</text>
+
+          <rect x="670" y="285" width="490" height="210" rx="20" fill="#d8f3dc" opacity="0.45" />
+          <text x="690" y="305" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONE C &bull; MIST VALLEY TERRACE</text>
+
+          <rect x="430" y="540" width="730" height="225" rx="20" fill="#d8f3dc" opacity="0.45" />
+          <text x="450" y="560" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONE D &bull; STARLIGHT OBSERVATION PLATEAU</text>
+
+          <!-- Main Hiking Trails -->
+          <path d="M 130,175 L 130,275 L 1140,275" fill="none" stroke="#d4a373" stroke-width="7" stroke-linecap="round" opacity="0.75" />
+          <path d="M 655,275 L 655,525 L 1140,525" fill="none" stroke="#d4a373" stroke-width="7" stroke-linecap="round" opacity="0.75" />
+          <text x="240" y="268" font-size="10" fill="#7f5539" font-weight="bold" letter-spacing="1">NORTH RIDGE TRAIL</text>
+          <text x="760" y="518" font-size="10" fill="#7f5539" font-weight="bold" letter-spacing="1">SOUTH PLATEAU BOARDWALK</text>
+
+          <!-- Environmental Landmarks -->
+          <g transform="translate(55, 75)">
+            <rect width="150" height="64" rx="14" fill="#1B4332" />
+            <text x="75" y="28" text-anchor="middle" font-size="12" fill="#fefae0" font-weight="bold">MAIN GATE &amp; QR</text>
+            <text x="75" y="46" text-anchor="middle" font-size="10" fill="#95d5b2">Check-In &amp; Gear Hub</text>
+          </g>
+
+          <g transform="translate(230, 75)">
+            <rect width="185" height="64" rx="14" fill="#fefae0" stroke="#dda15e" stroke-width="2" />
+            <text x="92" y="28" text-anchor="middle" font-size="11" fill="#9c5518" font-weight="bold">&#9728; SUNRISE VIEWPOINT</text>
+            <text x="92" y="45" text-anchor="middle" font-size="9.5" fill="#7f5539">Eastern Cliff Overlook</text>
+          </g>
+
+          <g transform="translate(70, 560)">
+            <circle cx="65" cy="65" r="55" fill="#bc6c25" opacity="0.92" />
+            <text x="65" y="61" text-anchor="middle" font-size="12" fill="#fff" font-weight="bold">CAMPFIRE</text>
+            <text x="65" y="77" text-anchor="middle" font-size="10" fill="#fefae0">Amphitheater</text>
+          </g>
+
+          <g transform="translate(235, 580)">
+            <rect width="155" height="52" rx="12" fill="#475569" />
+            <text x="77" y="24" text-anchor="middle" font-size="11" fill="#f8fafc" font-weight="bold">WASHROOMS</text>
+            <text x="77" y="39" text-anchor="middle" font-size="9.5" fill="#cbd5e1">Hot Showers &amp; Prayer Room</text>
+          </g>
+
+          <!-- Dynamic Camping Plots -->
+          @foreach($availability['plots'] as $plotItem)
+          @php
+          $coords = $plotItem['layout_coordinates'];
+          $plotZone = $coords['zone'] ?? 'Main Zone';
+          @endphp
+          <g transform="translate({{ $coords['x'] }}, {{ $coords['y'] }})"
+            @click="togglePlotById({{ $plotItem['id'] }})"
+            @keydown.enter.prevent="togglePlotById({{ $plotItem['id'] }})"
+            @mouseenter="hoveredPlot = getPlot({{ $plotItem['id'] }})"
+            @mouseleave="hoveredPlot = null"
+            :tabindex="isPlotAvailable({{ $plotItem['id'] }}) ? 0 : -1"
+            role="button"
+            :aria-pressed="isPlotSelected({{ $plotItem['id'] }}) ? 'true' : 'false'"
+            :aria-label="`{{ $plotItem['name'] }} - Max {{ $plotItem['capacity'] }} guests`"
+            data-area-id="{{ $plotItem['id'] }}"
+            :data-status="getPlotStatus({{ $plotItem['id'] }})"
+            :opacity="(activeZone === 'All Zones' || activeZone === @js($plotZone)) ? 1 : 0.25"
+            :class="isPlotAvailable({{ $plotItem['id'] }}) ? 'cursor-pointer' : 'cursor-not-allowed'">
+
+            <rect width="{{ $coords['width'] }}"
+              height="{{ $coords['height'] }}"
+              rx="12"
+              :fill="isPlotSelected({{ $plotItem['id'] }}) ? '#DDA15E' : (isPlotAvailable({{ $plotItem['id'] }}) ? '#2D6A4F' : 'url(#bookedHatch)')"
+              :stroke="isPlotSelected({{ $plotItem['id'] }}) ? '#9C5518' : (isPlotAvailable({{ $plotItem['id'] }}) ? '#1B4332' : '#94a3b8')"
+              :stroke-width="isPlotSelected({{ $plotItem['id'] }}) ? 3.5 : 1.5" />
+
+            <text x="{{ $coords['width'] / 2 }}"
+              y="{{ ($coords['height'] / 2) - 4 }}"
+              text-anchor="middle"
+              font-size="12"
+              font-weight="bold"
+              :fill="isPlotSelected({{ $plotItem['id'] }}) ? '#1B4332' : (isPlotAvailable({{ $plotItem['id'] }}) ? '#ffffff' : '#475569')">
+              {{ \Illuminate\Support\Str::afterLast($plotItem['name'], ' ') }}
+            </text>
+
+            <text x="{{ $coords['width'] / 2 }}"
+              y="{{ ($coords['height'] / 2) + 13 }}"
+              text-anchor="middle"
+              font-size="10"
+              :fill="isPlotSelected({{ $plotItem['id'] }}) ? '#1B4332' : (isPlotAvailable({{ $plotItem['id'] }}) ? '#d8f3dc' : '#64748b')"
+              x-text="isPlotSelected({{ $plotItem['id'] }}) ? '✓ {{ $plotItem['capacity'] }}p' : (isPlotAvailable({{ $plotItem['id'] }}) ? '{{ $plotItem['capacity'] }} pax' : 'FULL')">
+            </text>
+          </g>
+          @endforeach
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2-Column Section Below Map: Directory & Add-Ons (Left) + Sticky Summary (Right) -->
   <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-    <!-- Left 8 Cols: 1200x800 Interactive Map + Add-Ons -->
+    <!-- Left 8 Cols: Plot Directory + Equipment Add-Ons -->
     <div class="xl:col-span-8 space-y-8">
-      <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-stone-200/80">
-        <!-- Header + Zone Filters + Zoom Controls -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-          <div>
-            <h2 class="font-serif text-2xl font-bold text-forest-900">Bukit Embun Campsite Map</h2>
-            <p class="text-xs text-stone-500">Click one or multiple green plots to accommodate your group size.</p>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-2">
-            <!-- Zoom Controls -->
-            <div class="inline-flex rounded-xl border border-stone-200 bg-stone-50 p-0.5 text-xs font-semibold">
-              <button type="button" @click="zoom = 1" :class="zoom === 1 ? 'bg-forest-900 text-white' : 'text-stone-600'" class="px-2.5 py-1 rounded-lg transition">100%</button>
-              <button type="button" @click="zoom = 1.25" :class="zoom === 1.25 ? 'bg-forest-900 text-white' : 'text-stone-600'" class="px-2.5 py-1 rounded-lg transition">125%</button>
-              <button type="button" @click="zoom = 1.5" :class="zoom === 1.5 ? 'bg-forest-900 text-white' : 'text-stone-600'" class="px-2.5 py-1 rounded-lg transition">150%</button>
-            </div>
-          </div>
+      <!-- Accessible Synchronized Card Selector Fallback -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200/80">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-stone-500">
+            Plot Directory (<span x-text="filteredPlots.length"></span> plots)
+          </h3>
+          <button type="button" x-show="selectedPlotIds.length > 0" @click="selectedPlotIds = []"
+            class="text-xs text-red-600 hover:underline font-semibold">
+            Clear Selection
+          </button>
         </div>
 
-        <!-- Zone Filter Pills & Legend -->
-        <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-stone-100 mb-4">
-          <div class="flex flex-wrap gap-1.5 text-xs font-semibold">
-            <template x-for="zone in zones" :key="zone">
-              <button type="button"
-                @click="activeZone = zone"
-                :class="activeZone === zone ? 'bg-forest-900 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'"
-                class="px-3 py-1.5 rounded-xl transition cursor-pointer"
-                x-text="zone"></button>
-            </template>
-          </div>
-
-          <div class="flex items-center gap-4 text-xs font-medium">
-            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-[#2D6A4F] inline-block"></span> Available</span>
-            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-[#DDA15E] ring-2 ring-amber-700 inline-block"></span> Selected</span>
-            <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-stone-300 inline-block"></span> Booked / Maint.</span>
-          </div>
-        </div>
-
-        <!-- Hover Tooltip Banner -->
-        <div class="min-h-[36px] mb-2 px-3.5 py-2 rounded-xl bg-stone-50 border border-stone-200/70 flex items-center justify-between text-xs">
-          <template x-if="hoveredPlot">
-            <div class="flex flex-wrap items-center gap-3">
-              <span class="font-bold text-forest-900" x-text="hoveredPlot.name"></span>
-              <span class="text-stone-500" x-text="hoveredPlot.layout_coordinates.zone"></span>
-              <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-semibold" x-text="`Max ${hoveredPlot.capacity} guests`"></span>
-              <span class="font-bold text-terracotta-600" x-text="formatRupiah(hoveredPlot.price_per_night) + ' / night'"></span>
-            </div>
-          </template>
-          <template x-if="!hoveredPlot">
-            <span class="text-stone-400">Hover or tap any plot on the 1200&times;800 map to inspect elevation, capacity, and nightly rate.</span>
-          </template>
-        </div>
-
-        <!-- Scrollable 1200x800 SVG Canvas -->
-        <div class="relative overflow-auto max-h-[620px] rounded-2xl border border-emerald-900/20 bg-[#eaf4ec]">
-          <div :style="`width: ${1200 * zoom}px; height: ${800 * zoom}px;`" class="transition-all duration-200">
-            <svg viewBox="0 0 1200 800" class="w-full h-full select-none" role="img" aria-label="Bukit Embun 1200x800 Interactive Campsite Map">
-              <defs>
-                <pattern id="bookedHatch" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-                  <line x1="0" y1="0" x2="0" y2="10" stroke="#94a3b8" stroke-width="3.5" />
-                </pattern>
-              </defs>
-
-              <!-- Topographic Contour Lines -->
-              <path d="M 0,80 Q 450,25 1200,75" fill="none" stroke="#b7e4c7" stroke-width="2.5" stroke-dasharray="8 6" />
-              <path d="M 0,275 Q 600,245 1200,285" fill="none" stroke="#b7e4c7" stroke-width="2.5" stroke-dasharray="8 6" />
-              <path d="M 0,520 Q 580,490 1200,530" fill="none" stroke="#b7e4c7" stroke-width="2.5" stroke-dasharray="8 6" />
-
-              <!-- Zone Region Backdrops -->
-              <rect x="450" y="65" width="710" height="205" rx="20" fill="#d8f3dc" opacity="0.45" />
-              <text x="470" y="85" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONE A &bull; SUNRISE RIDGE (1,425 MDPL)</text>
-
-              <rect x="50" y="285" width="595" height="210" rx="20" fill="#d8f3dc" opacity="0.45" />
-              <text x="70" y="305" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONE B &bull; PINE GROVE WOODLAND</text>
-
-              <rect x="670" y="285" width="490" height="210" rx="20" fill="#d8f3dc" opacity="0.45" />
-              <text x="690" y="305" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONE C &bull; MIST VALLEY TERRACE</text>
-
-              <rect x="430" y="540" width="730" height="225" rx="20" fill="#d8f3dc" opacity="0.45" />
-              <text x="450" y="560" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONE D &bull; STARLIGHT OBSERVATION PLATEAU</text>
-
-              <!-- Main Hiking Trails -->
-              <path d="M 130,175 L 130,275 L 1140,275" fill="none" stroke="#d4a373" stroke-width="7" stroke-linecap="round" opacity="0.75" />
-              <path d="M 655,275 L 655,525 L 1140,525" fill="none" stroke="#d4a373" stroke-width="7" stroke-linecap="round" opacity="0.75" />
-              <text x="240" y="268" font-size="10" fill="#7f5539" font-weight="bold" letter-spacing="1">NORTH RIDGE TRAIL</text>
-              <text x="760" y="518" font-size="10" fill="#7f5539" font-weight="bold" letter-spacing="1">SOUTH PLATEAU BOARDWALK</text>
-
-              <!-- Environmental Landmarks -->
-              <g transform="translate(55, 75)">
-                <rect width="150" height="64" rx="14" fill="#1B4332" />
-                <text x="75" y="28" text-anchor="middle" font-size="12" fill="#fefae0" font-weight="bold">MAIN GATE &amp; QR</text>
-                <text x="75" y="46" text-anchor="middle" font-size="10" fill="#95d5b2">Check-In &amp; Gear Hub</text>
-              </g>
-
-              <g transform="translate(230, 75)">
-                <rect width="185" height="64" rx="14" fill="#fefae0" stroke="#dda15e" stroke-width="2" />
-                <text x="92" y="28" text-anchor="middle" font-size="11" fill="#9c5518" font-weight="bold">&#9728; SUNRISE VIEWPOINT</text>
-                <text x="92" y="45" text-anchor="middle" font-size="9.5" fill="#7f5539">Eastern Cliff Overlook</text>
-              </g>
-
-              <g transform="translate(70, 560)">
-                <circle cx="65" cy="65" r="55" fill="#bc6c25" opacity="0.92" />
-                <text x="65" y="61" text-anchor="middle" font-size="12" fill="#fff" font-weight="bold">CAMPFIRE</text>
-                <text x="65" y="77" text-anchor="middle" font-size="10" fill="#fefae0">Amphitheater</text>
-              </g>
-
-              <g transform="translate(235, 580)">
-                <rect width="155" height="52" rx="12" fill="#475569" />
-                <text x="77" y="24" text-anchor="middle" font-size="11" fill="#f8fafc" font-weight="bold">WASHROOMS</text>
-                <text x="77" y="39" text-anchor="middle" font-size="9.5" fill="#cbd5e1">Hot Showers &amp; Prayer Room</text>
-              </g>
-
-              <!-- Dynamic 30+ Camping Plots (Rendered in SVG namespace, reactive via Alpine) -->
-              @foreach($availability['plots'] as $plotItem)
-              @php
-              $coords = $plotItem['layout_coordinates'];
-              $plotZone = $coords['zone'] ?? 'Main Zone';
-              @endphp
-              <g transform="translate({{ $coords['x'] }}, {{ $coords['y'] }})"
-                @click="togglePlotById({{ $plotItem['id'] }})"
-                @keydown.enter.prevent="togglePlotById({{ $plotItem['id'] }})"
-                @mouseenter="hoveredPlot = getPlot({{ $plotItem['id'] }})"
-                @mouseleave="hoveredPlot = null"
-                :tabindex="isPlotAvailable({{ $plotItem['id'] }}) ? 0 : -1"
-                role="button"
-                :aria-pressed="isPlotSelected({{ $plotItem['id'] }}) ? 'true' : 'false'"
-                :aria-label="`{{ $plotItem['name'] }} - Max {{ $plotItem['capacity'] }} guests`"
-                data-area-id="{{ $plotItem['id'] }}"
-                :data-status="getPlotStatus({{ $plotItem['id'] }})"
-                :opacity="(activeZone === 'All Zones' || activeZone === @js($plotZone)) ? 1 : 0.25"
-                :class="isPlotAvailable({{ $plotItem['id'] }}) ? 'cursor-pointer' : 'cursor-not-allowed'">
-
-                <rect width="{{ $coords['width'] }}"
-                  height="{{ $coords['height'] }}"
-                  rx="12"
-                  :fill="isPlotSelected({{ $plotItem['id'] }}) ? '#DDA15E' : (isPlotAvailable({{ $plotItem['id'] }}) ? '#2D6A4F' : 'url(#bookedHatch)')"
-                  :stroke="isPlotSelected({{ $plotItem['id'] }}) ? '#9C5518' : (isPlotAvailable({{ $plotItem['id'] }}) ? '#1B4332' : '#94a3b8')"
-                  :stroke-width="isPlotSelected({{ $plotItem['id'] }}) ? 3.5 : 1.5" />
-
-                <text x="{{ $coords['width'] / 2 }}"
-                  y="{{ ($coords['height'] / 2) - 4 }}"
-                  text-anchor="middle"
-                  font-size="12"
-                  font-weight="bold"
-                  :fill="isPlotSelected({{ $plotItem['id'] }}) ? '#1B4332' : (isPlotAvailable({{ $plotItem['id'] }}) ? '#ffffff' : '#475569')">
-                  {{ \Illuminate\Support\Str::afterLast($plotItem['name'], ' ') }}
-                </text>
-
-                <text x="{{ $coords['width'] / 2 }}"
-                  y="{{ ($coords['height'] / 2) + 13 }}"
-                  text-anchor="middle"
-                  font-size="10"
-                  :fill="isPlotSelected({{ $plotItem['id'] }}) ? '#1B4332' : (isPlotAvailable({{ $plotItem['id'] }}) ? '#d8f3dc' : '#64748b')"
-                  x-text="isPlotSelected({{ $plotItem['id'] }}) ? '✓ {{ $plotItem['capacity'] }}p' : (isPlotAvailable({{ $plotItem['id'] }}) ? '{{ $plotItem['capacity'] }} pax' : 'FULL')">
-                </text>
-              </g>
-              @endforeach
-            </svg>
-          </div>
-        </div>
-
-        <!-- Accessible Synchronized Card Selector Fallback -->
-        <div class="mt-6">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-stone-500">
-              Plot Directory (<span x-text="filteredPlots.length"></span> plots)
-            </h3>
-            <button type="button" x-show="selectedPlotIds.length > 0" @click="selectedPlotIds = []"
-              class="text-xs text-red-600 hover:underline font-semibold">
-              Clear Selection
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-80 overflow-y-auto pr-1">
+          <template x-for="plot in filteredPlots" :key="'card-' + plot.id">
+            <button type="button"
+              @click="togglePlot(plot)"
+              :disabled="!plot.is_available"
+              :class="{
+                'ring-2 ring-amber-600 bg-sand-50 border-amber-400': isPlotSelected(plot.id),
+                'bg-white hover:border-forest-800 border-stone-200': plot.is_available && !isPlotSelected(plot.id),
+                'bg-stone-100 opacity-60 cursor-not-allowed border-stone-200': !plot.is_available
+              }"
+              class="text-left p-3.5 rounded-xl border transition">
+              <div class="flex justify-between items-start gap-2">
+                <span class="font-bold text-sm text-forest-900" x-text="plot.name"></span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0"
+                  :class="isPlotSelected(plot.id) ? 'bg-amber-200 text-amber-950' : (plot.is_available ? 'bg-emerald-100 text-forest-900' : 'bg-stone-200 text-stone-600')"
+                  x-text="isPlotSelected(plot.id) ? 'Selected' : (plot.is_available ? 'Available' : plot.status)"></span>
+              </div>
+              <p class="text-xs text-stone-500 mt-1" x-text="`Max ${plot.capacity} guests • ${plot.layout_coordinates.zone || ''}`"></p>
+              <p class="text-sm font-bold text-terracotta-600 mt-1.5" x-text="formatRupiah(plot.price_per_night) + ' / night'"></p>
             </button>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-80 overflow-y-auto pr-1">
-            <template x-for="plot in filteredPlots" :key="'card-' + plot.id">
-              <button type="button"
-                @click="togglePlot(plot)"
-                :disabled="!plot.is_available"
-                :class="{
-                                        'ring-2 ring-amber-600 bg-sand-50 border-amber-400': isPlotSelected(plot.id),
-                                        'bg-white hover:border-forest-800 border-stone-200': plot.is_available && !isPlotSelected(plot.id),
-                                        'bg-stone-100 opacity-60 cursor-not-allowed border-stone-200': !plot.is_available
-                                    }"
-                class="text-left p-3.5 rounded-xl border transition">
-                <div class="flex justify-between items-start gap-2">
-                  <span class="font-bold text-sm text-forest-900" x-text="plot.name"></span>
-                  <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0"
-                    :class="isPlotSelected(plot.id) ? 'bg-amber-200 text-amber-950' : (plot.is_available ? 'bg-emerald-100 text-forest-900' : 'bg-stone-200 text-stone-600')"
-                    x-text="isPlotSelected(plot.id) ? 'Selected' : (plot.is_available ? 'Available' : plot.status)"></span>
-                </div>
-                <p class="text-xs text-stone-500 mt-1" x-text="`Max ${plot.capacity} guests • ${plot.layout_coordinates.zone || ''}`"></p>
-                <p class="text-sm font-bold text-terracotta-600 mt-1.5" x-text="formatRupiah(plot.price_per_night) + ' / night'"></p>
-              </button>
-            </template>
-          </div>
+          </template>
         </div>
       </div>
 
