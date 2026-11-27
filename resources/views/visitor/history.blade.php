@@ -11,7 +11,7 @@
   <div class="flex justify-between items-center">
     <div>
       <h1 class="text-xl font-bold">Riwayat Transaksi & E-Tiket</h1>
-      <p class="text-sm text-slate-500">Daftar reservasi camping ground yang pernah Anda lakukan.</p>
+      <p class="text-sm text-slate-500">Daftar reservasi bumi perkemahan yang pernah Anda lakukan.</p>
     </div>
     <a href="{{ route('home') }}" class="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold px-4 py-2 rounded-lg">
       + Buat Reservasi Baru
@@ -20,8 +20,8 @@
 
   @if($reservations->isEmpty())
   <div class="bg-white p-8 rounded-xl border text-center text-slate-500">
-    <p class="mb-3">Belum ada riwayat reservasi.</p>
-    <a href="{{ route('home') }}" class="text-emerald-700 font-semibold hover:underline">Mulai pesan tapak camping sekarang &rarr;</a>
+    <p class="mb-3">Anda belum memiliki riwayat reservasi.</p>
+    <a href="{{ route('home') }}" class="text-emerald-700 font-semibold hover:underline">Mulai pesan area kemping sekarang &rarr;</a>
   </div>
   @else
   <div class="space-y-4">
@@ -41,12 +41,12 @@
 
         <h2 class="font-bold text-base text-emerald-900">{{ $res->campingArea->name }}</h2>
         <p class="text-xs text-slate-600">
-          Jadwal: <strong>{{ $res->check_in_date->format('d M Y') }}</strong> s/d <strong>{{ $res->check_out_date->format('d M Y') }}</strong> ({{ $res->duration_nights }} malam, {{ $res->guest_count }} orang)
+          Jadwal: <strong>{{ $res->check_in_date->format('d M Y') }}</strong> sampai <strong>{{ $res->check_out_date->format('d M Y') }}</strong> ({{ $res->duration_nights }} malam, {{ $res->guest_count }} orang)
         </p>
 
         @if($res->items->isNotEmpty())
         <p class="text-xs text-slate-500">
-          Add-On: {{ $res->items->map(fn($i) => "{$i->facility->name} ({$i->qty} {$i->facility->unit})")->join(', ') }}
+          Perlengkapan Tambahan: {{ $res->items->map(fn($i) => "{$i->facility->name} ({$i->qty} {$i->facility->unit})")->join(', ') }}
         </p>
         @endif
       </div>
@@ -60,7 +60,7 @@
         <div class="mt-3 flex gap-2">
           @if($res->payment_status === 'settled' && $res->ticket)
           <a href="{{ route('visitor.ticket', $res) }}" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2 rounded-lg">
-            Lihat E-Tiket (QR Code)
+            Lihat E-Tiket (Kode QR)
           </a>
           @elseif($res->payment_status === 'pending')
           <button onclick="resumePayment({{ $res->id }})" class="bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-semibold px-4 py-2 rounded-lg">
@@ -97,7 +97,7 @@
     window.snap.pay(json.data.snap_token, {
       onSuccess: () => window.location.reload(),
       onPending: () => window.location.reload(),
-      onError: () => alert('Pembayaran gagal, silakan coba lagi.')
+      onError: () => alert('Pembayaran gagal. Silakan coba kembali.')
     });
   }
 </script>

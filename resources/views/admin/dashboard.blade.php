@@ -1,6 +1,6 @@
 @extends('layouts.nature')
 
-@section('title', 'Admin Control Panel — Bukit Embun')
+@section('title', 'Panel Kontrol Admin — Bukit Embun')
 
 @section('content')
 <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8"
@@ -9,18 +9,18 @@
          defaultTab: @js($errors->has('image_file') || $errors->has('image_url') ? 'galleries' : ($errors->has('rental_price') && !$errors->has('capacity') ? 'facilities' : 'plots'))
      })">
 
-  <!-- Header & Export -->
+  <!-- Header & Ekspor -->
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="font-serif text-3xl font-bold text-forest-900">Admin Operations Hub</h1>
-      <p class="text-sm text-stone-500">Manage 30+ campsite plots, SVG coordinates, equipment stock, local gallery uploads, and transactions.</p>
+      <h1 class="font-serif text-3xl font-bold text-forest-900">Pusat Operasional Admin</h1>
+      <p class="text-sm text-stone-500">Kelola 30+ kapling perkemahan, koordinat SVG, stok perlengkapan, unggahan galeri lokal, dan transaksi.</p>
     </div>
     <a href="{{ route('admin.export.csv') }}" class="px-4 py-2.5 rounded-xl bg-forest-900 text-white text-xs font-semibold shadow hover:bg-forest-800">
-      Export Transactions CSV
+      Ekspor Transaksi CSV
     </a>
   </div>
 
-  <!-- Flash & Validation Alerts -->
+  <!-- Notifikasi Flash & Validasi -->
   @if(session('success'))
   <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm font-medium">
     {{ session('success') }}
@@ -33,7 +33,7 @@
   @endif
   @if($errors->any())
   <div class="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs space-y-1">
-    <p class="font-bold">Please fix the following input errors:</p>
+    <p class="font-bold">Harap perbaiki kesalahan input berikut:</p>
     <ul class="list-disc pl-5">
       @foreach($errors->all() as $err)
       <li>{{ $err }}</li>
@@ -42,68 +42,68 @@
   </div>
   @endif
 
-  <!-- KPI Cards -->
+  <!-- Kartu KPI -->
   <div class="grid grid-cols-1 sm:grid-cols-4 gap-5">
     <div class="bg-white p-5 rounded-2xl border border-stone-200">
-      <p class="text-xs font-bold uppercase text-stone-400">Settled Revenue</p>
+      <p class="text-xs font-bold uppercase text-stone-400">Pendapatan Lunas</p>
       <p class="text-2xl font-bold text-forest-900 mt-1">Rp {{ number_format($stats['total_revenue'], 0, ',', '.') }}</p>
     </div>
     <div class="bg-white p-5 rounded-2xl border border-stone-200">
-      <p class="text-xs font-bold uppercase text-stone-400">Settled Bookings</p>
+      <p class="text-xs font-bold uppercase text-stone-400">Pemesanan Lunas</p>
       <p class="text-2xl font-bold text-emerald-700 mt-1">{{ $stats['settled_bookings'] }}</p>
     </div>
     <div class="bg-white p-5 rounded-2xl border border-stone-200">
-      <p class="text-xs font-bold uppercase text-stone-400">Pending Payment</p>
+      <p class="text-xs font-bold uppercase text-stone-400">Menunggu Pembayaran</p>
       <p class="text-2xl font-bold text-amber-600 mt-1">{{ $stats['pending_bookings'] }}</p>
     </div>
     <div class="bg-white p-5 rounded-2xl border border-stone-200">
-      <p class="text-xs font-bold uppercase text-stone-400">Total Campsite Plots</p>
+      <p class="text-xs font-bold uppercase text-stone-400">Total Kapling Kemah</p>
       <p class="text-2xl font-bold text-stone-900 mt-1">{{ $stats['total_plots'] }}</p>
     </div>
   </div>
 
-  <!-- Navigation Tabs -->
+  <!-- Tab Navigasi -->
   <div class="flex flex-wrap gap-2 border-b border-stone-200 pb-3">
     <button type="button" @click="activeTab = 'plots'"
       :class="activeTab === 'plots' ? 'bg-forest-900 text-white' : 'bg-white text-stone-700 border border-stone-200'"
       class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
-      Camping Plots ({{ $campingAreas->count() }})
+      Kapling Kemah ({{ $campingAreas->count() }})
     </button>
     <button type="button" @click="activeTab = 'facilities'"
       :class="activeTab === 'facilities' ? 'bg-forest-900 text-white' : 'bg-white text-stone-700 border border-stone-200'"
       class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
-      Equipment &amp; Gear ({{ $facilities->count() }})
+      Perlengkapan &amp; Alat ({{ $facilities->count() }})
     </button>
     <button type="button" @click="activeTab = 'galleries'"
       :class="activeTab === 'galleries' ? 'bg-forest-900 text-white' : 'bg-white text-stone-700 border border-stone-200'"
       class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
-      Gallery Media ({{ $galleries->count() }})
+      Media Galeri ({{ $galleries->count() }})
     </button>
     <button type="button" @click="activeTab = 'transactions'"
       :class="activeTab === 'transactions' ? 'bg-forest-900 text-white' : 'bg-white text-stone-700 border border-stone-200'"
       class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
-      Transactions
+      Transaksi
     </button>
   </div>
 
-  <!-- TAB 1: CAMPING PLOTS CRUD + INTERACTIVE COORDINATE PICKER -->
+  <!-- TAB 1: CRUD KAPLING KEMAH + PEMILIH KOORDINAT INTERAKTIF -->
   <div x-show="activeTab === 'plots'" class="space-y-8">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
-      <!-- Add New Plot Form -->
+      <!-- Formulir Tambah Kapling Baru -->
       <div class="lg:col-span-5 space-y-4">
         <div>
-          <h2 class="font-serif text-xl font-bold text-forest-900">Add New Camping Plot</h2>
-          <p class="text-xs text-stone-500">Click anywhere on the 1200&times;800 preview map to set X &amp; Y coordinates.</p>
+          <h2 class="font-serif text-xl font-bold text-forest-900">Tambah Kapling Kemah Baru</h2>
+          <p class="text-xs text-stone-500">Klik di mana saja pada peta pratinjau 1200&times;800 untuk mengatur koordinat X &amp; Y.</p>
         </div>
 
         <form method="POST" action="{{ route('admin.areas.store') }}" class="grid grid-cols-2 gap-3 text-xs">
           @csrf
           <div class="col-span-2">
-            <label class="block font-bold text-stone-600 mb-1">Plot Name</label>
-            <input name="name" placeholder="e.g., Sunrise Ridge A9" required class="w-full rounded-xl border-stone-300 text-xs">
+            <label class="block font-bold text-stone-600 mb-1">Nama Kapling</label>
+            <input name="name" placeholder="mis., Sunrise Ridge A9" required class="w-full rounded-xl border-stone-300 text-xs">
           </div>
           <div>
-            <label class="block font-bold text-stone-600 mb-1">Zone</label>
+            <label class="block font-bold text-stone-600 mb-1">Zona</label>
             <select name="zone" class="w-full rounded-xl border-stone-300 text-xs">
               <option value="Sunrise Ridge">Sunrise Ridge</option>
               <option value="Pine Grove">Pine Grove</option>
@@ -112,55 +112,55 @@
             </select>
           </div>
           <div>
-            <label class="block font-bold text-stone-600 mb-1">Elevation</label>
+            <label class="block font-bold text-stone-600 mb-1">Ketinggian</label>
             <input name="elevation" value="1,410 mdpl" class="w-full rounded-xl border-stone-300 text-xs">
           </div>
           <div>
-            <label class="block font-bold text-stone-600 mb-1">Max Guests</label>
+            <label class="block font-bold text-stone-600 mb-1">Maks. Tamu</label>
             <input type="number" name="capacity" value="4" min="1" required class="w-full rounded-xl border-stone-300 text-xs">
           </div>
           <div>
-            <label class="block font-bold text-stone-600 mb-1">Price / Night (Rp)</label>
+            <label class="block font-bold text-stone-600 mb-1">Harga / Malam (Rp)</label>
             <input type="number" name="price_per_night" value="175000" min="0" required class="w-full rounded-xl border-stone-300 text-xs">
           </div>
           <div>
-            <label class="block font-bold text-stone-600 mb-1">Map X (0–1140)</label>
+            <label class="block font-bold text-stone-600 mb-1">Peta X (0–1140)</label>
             <input type="number" name="x" x-model.number="newPlot.x" min="0" max="1140" required class="w-full rounded-xl border-stone-300 text-xs font-mono">
           </div>
           <div>
-            <label class="block font-bold text-stone-600 mb-1">Map Y (0–740)</label>
+            <label class="block font-bold text-stone-600 mb-1">Peta Y (0–740)</label>
             <input type="number" name="y" x-model.number="newPlot.y" min="0" max="740" required class="w-full rounded-xl border-stone-300 text-xs font-mono">
           </div>
           <div>
-            <label class="block font-bold text-stone-600 mb-1">Width (px)</label>
+            <label class="block font-bold text-stone-600 mb-1">Lebar (px)</label>
             <input type="number" name="width" x-model.number="newPlot.width" min="40" max="300" required class="w-full rounded-xl border-stone-300 text-xs font-mono">
           </div>
           <div>
-            <label class="block font-bold text-stone-600 mb-1">Height (px)</label>
+            <label class="block font-bold text-stone-600 mb-1">Tinggi (px)</label>
             <input type="number" name="height" x-model.number="newPlot.height" min="35" max="200" required class="w-full rounded-xl border-stone-300 text-xs font-mono">
           </div>
           <div class="col-span-2">
-            <label class="block font-bold text-stone-600 mb-1">Status &amp; Description</label>
+            <label class="block font-bold text-stone-600 mb-1">Status &amp; Deskripsi</label>
             <div class="flex gap-2">
               <select name="status" class="rounded-xl border-stone-300 text-xs">
-                <option value="available">available</option>
-                <option value="maintenance">maintenance</option>
+                <option value="available">tersedia</option>
+                <option value="maintenance">perbaikan</option>
               </select>
-              <input name="description" placeholder="Short scenic description..." class="flex-1 rounded-xl border-stone-300 text-xs">
+              <input name="description" placeholder="Deskripsi singkat pemandangan..." class="flex-1 rounded-xl border-stone-300 text-xs">
             </div>
           </div>
           <div class="col-span-2 pt-1">
             <button type="submit" class="w-full py-2.5 rounded-xl bg-terracotta-600 hover:bg-terracotta-700 text-white font-bold text-xs shadow cursor-pointer">
-              + Create Camping Plot
+              + Buat Kapling Kemah
             </button>
           </div>
         </form>
       </div>
 
-      <!-- Interactive 1200x800 Coordinate Picker Canvas -->
+      <!-- Kanvas Pemilih Koordinat Interaktif 1200x800 -->
       <div class="lg:col-span-7">
         <div class="flex items-center justify-between text-xs mb-2">
-          <span class="font-bold text-forest-900">Click Map to Position New Plot</span>
+          <span class="font-bold text-forest-900">Klik Peta untuk Menentukan Posisi Kapling Baru</span>
           <span class="font-mono text-stone-500" x-text="`Target: X=${newPlot.x}, Y=${newPlot.y} (${newPlot.width}×${newPlot.height})`"></span>
         </div>
         <div class="rounded-2xl border border-emerald-900/20 bg-[#eaf4ec] overflow-hidden">
@@ -170,7 +170,7 @@
             <rect x="670" y="285" width="490" height="210" rx="20" fill="#d8f3dc" opacity="0.5" />
             <rect x="430" y="540" width="730" height="225" rx="20" fill="#d8f3dc" opacity="0.5" />
 
-            <!-- Existing Plots -->
+            <!-- Kapling yang Sudah Ada -->
             @foreach($campingAreas as $area)
             @php $c = $area->layout_coordinates; @endphp
             <g transform="translate({{ $c['x'] ?? 0 }}, {{ $c['y'] ?? 0 }})">
@@ -183,32 +183,32 @@
             </g>
             @endforeach
 
-            <!-- Live Golden Preview Marker for New Plot -->
+            <!-- Penanda Pratinjau Emas Langsung untuk Kapling Baru -->
             <g :transform="`translate(${newPlot.x}, ${newPlot.y})`">
               <rect :width="newPlot.width" :height="newPlot.height" rx="10"
                 fill="#DDA15E" stroke="#9C5518" stroke-width="4" stroke-dasharray="6 4" />
               <text :x="newPlot.width / 2" :y="(newPlot.height / 2) + 4"
-                text-anchor="middle" font-size="12" fill="#1B4332" font-weight="bold">NEW</text>
+                text-anchor="middle" font-size="12" fill="#1B4332" font-weight="bold">BARU</text>
             </g>
           </svg>
         </div>
       </div>
     </div>
 
-    <!-- Existing Plots Table (Inline Update + Delete) -->
+    <!-- Tabel Kapling yang Sudah Ada (Ubah Langsung + Hapus) -->
     <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
-      <h3 class="font-serif text-xl font-bold text-forest-900 mb-4">All Camping Plots</h3>
+      <h3 class="font-serif text-xl font-bold text-forest-900 mb-4">Semua Kapling Kemah</h3>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs">
           <thead class="uppercase text-stone-400 border-b">
             <tr>
-              <th class="py-2">Name</th>
-              <th>Zone</th>
-              <th>Cap.</th>
-              <th>Price/Night</th>
-              <th>X / Y / W / H</th>
+              <th class="py-2">Nama</th>
+              <th>Zona</th>
+              <th>Kap.</th>
+              <th>Harga/Malam</th>
+              <th>X / Y / L / T</th>
               <th>Status</th>
-              <th class="text-right">Actions</th>
+              <th class="text-right">Aksi</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-stone-100">
@@ -228,21 +228,21 @@
                 <div class="flex gap-1">
                   <input form="update-area-{{ $area->id }}" type="number" name="x" value="{{ $c['x'] ?? 0 }}" class="rounded-lg border-stone-300 text-xs w-14 font-mono" title="X">
                   <input form="update-area-{{ $area->id }}" type="number" name="y" value="{{ $c['y'] ?? 0 }}" class="rounded-lg border-stone-300 text-xs w-14 font-mono" title="Y">
-                  <input form="update-area-{{ $area->id }}" type="number" name="width" value="{{ $c['width'] ?? 100 }}" class="rounded-lg border-stone-300 text-xs w-14 font-mono" title="Width">
-                  <input form="update-area-{{ $area->id }}" type="number" name="height" value="{{ $c['height'] ?? 64 }}" class="rounded-lg border-stone-300 text-xs w-14 font-mono" title="Height">
+                  <input form="update-area-{{ $area->id }}" type="number" name="width" value="{{ $c['width'] ?? 100 }}" class="rounded-lg border-stone-300 text-xs w-14 font-mono" title="Lebar">
+                  <input form="update-area-{{ $area->id }}" type="number" name="height" value="{{ $c['height'] ?? 64 }}" class="rounded-lg border-stone-300 text-xs w-14 font-mono" title="Tinggi">
                 </div>
               </td>
               <td class="pr-2">
                 <select form="update-area-{{ $area->id }}" name="status" class="rounded-lg border-stone-300 text-xs">
-                  <option value="available" @selected($area->status === 'available')>available</option>
-                  <option value="maintenance" @selected($area->status === 'maintenance')>maintenance</option>
+                  <option value="available" @selected($area->status === 'available')>tersedia</option>
+                  <option value="maintenance" @selected($area->status === 'maintenance')>perbaikan</option>
                 </select>
               </td>
               <td class="text-right whitespace-nowrap space-x-1">
-                <button form="update-area-{{ $area->id }}" type="submit" class="px-3 py-1.5 rounded-lg bg-forest-900 text-white font-semibold hover:bg-forest-800">Save</button>
-                <form method="POST" action="{{ route('admin.areas.destroy', $area) }}" class="inline" onsubmit="return confirm('Delete plot {{ $area->name }}?')">
+                <button form="update-area-{{ $area->id }}" type="submit" class="px-3 py-1.5 rounded-lg bg-forest-900 text-white font-semibold hover:bg-forest-800">Simpan</button>
+                <form method="POST" action="{{ route('admin.areas.destroy', $area) }}" class="inline" onsubmit="return confirm('Hapus kapling {{ $area->name }}?')">
                   @csrf @method('DELETE')
-                  <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-700 font-semibold hover:bg-red-100">Delete</button>
+                  <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-700 font-semibold hover:bg-red-100">Hapus</button>
                 </form>
               </td>
             </tr>
@@ -253,42 +253,42 @@
     </div>
   </div>
 
-  <!-- TAB 2: EQUIPMENT & GEAR CRUD -->
+  <!-- TAB 2: CRUD PERLENGKAPAN & ALAT -->
   <div x-show="activeTab === 'facilities'" x-cloak class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 space-y-6">
     <div>
-      <h2 class="font-serif text-xl font-bold text-forest-900">Equipment &amp; Rental Inventory</h2>
-      <p class="text-xs text-stone-500">Add new camping gear, adjust physical stock, or update nightly rental rates.</p>
+      <h2 class="font-serif text-xl font-bold text-forest-900">Inventaris Perlengkapan &amp; Sewa</h2>
+      <p class="text-xs text-stone-500">Tambahkan perlengkapan berkemah baru, sesuaikan stok fisik, atau perbarui tarif sewa per malam.</p>
     </div>
 
-    <!-- Create Equipment Form -->
+    <!-- Formulir Tambah Perlengkapan -->
     <form method="POST" action="{{ route('admin.facilities.store') }}" class="grid grid-cols-1 sm:grid-cols-6 gap-3 bg-stone-50 p-4 rounded-xl border border-stone-200/70 text-xs">
       @csrf
-      <input name="name" placeholder="Equipment Name (e.g., Hammock Double)" required class="sm:col-span-2 rounded-xl border-stone-300 text-xs">
+      <input name="name" placeholder="Nama Perlengkapan (mis., Hammock Double)" required class="sm:col-span-2 rounded-xl border-stone-300 text-xs">
       <select name="category" class="rounded-xl border-stone-300 text-xs">
-        <option value="tent">tent</option>
-        <option value="equipment">equipment</option>
-        <option value="lamp">lamp</option>
-        <option value="cooking">cooking</option>
+        <option value="tent">tenda</option>
+        <option value="equipment">perlengkapan</option>
+        <option value="lamp">lampu</option>
+        <option value="cooking">alat masak</option>
       </select>
-      <input type="number" name="stock" placeholder="Stock" min="0" required class="rounded-xl border-stone-300 text-xs">
-      <input type="number" name="rental_price" placeholder="Price (Rp)" min="0" required class="rounded-xl border-stone-300 text-xs">
+      <input type="number" name="stock" placeholder="Stok" min="0" required class="rounded-xl border-stone-300 text-xs">
+      <input type="number" name="rental_price" placeholder="Harga (Rp)" min="0" required class="rounded-xl border-stone-300 text-xs">
       <div class="flex gap-2">
-        <input name="unit" value="unit" placeholder="Unit" required class="w-20 rounded-xl border-stone-300 text-xs">
-        <button type="submit" class="flex-1 rounded-xl bg-terracotta-600 text-white font-bold hover:bg-terracotta-700">+ Add</button>
+        <input name="unit" value="unit" placeholder="Satuan" required class="w-20 rounded-xl border-stone-300 text-xs">
+        <button type="submit" class="flex-1 rounded-xl bg-terracotta-600 text-white font-bold hover:bg-terracotta-700">+ Tambah</button>
       </div>
     </form>
 
-    <!-- Equipment Table -->
+    <!-- Tabel Perlengkapan -->
     <div class="overflow-x-auto">
       <table class="w-full text-left text-xs">
         <thead class="uppercase text-stone-400 border-b">
           <tr>
-            <th class="py-2">Equipment Name</th>
-            <th>Category</th>
-            <th>Stock</th>
-            <th>Rental Price (Rp)</th>
-            <th>Unit</th>
-            <th class="text-right">Actions</th>
+            <th class="py-2">Nama Perlengkapan</th>
+            <th>Kategori</th>
+            <th>Stok</th>
+            <th>Harga Sewa (Rp)</th>
+            <th>Satuan</th>
+            <th class="text-right">Aksi</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-stone-100">
@@ -305,10 +305,10 @@
             <td class="pr-2"><input form="update-fac-{{ $facility->id }}" type="number" name="rental_price" value="{{ (int) $facility->rental_price }}" class="rounded-lg border-stone-300 text-xs w-28"></td>
             <td class="pr-2"><input form="update-fac-{{ $facility->id }}" name="unit" value="{{ $facility->unit }}" class="rounded-lg border-stone-300 text-xs w-20"></td>
             <td class="text-right whitespace-nowrap space-x-1">
-              <button form="update-fac-{{ $facility->id }}" type="submit" class="px-3 py-1.5 rounded-lg bg-forest-900 text-white font-semibold hover:bg-forest-800">Save</button>
-              <form method="POST" action="{{ route('admin.facilities.destroy', $facility) }}" class="inline" onsubmit="return confirm('Delete {{ $facility->name }}?')">
+              <button form="update-fac-{{ $facility->id }}" type="submit" class="px-3 py-1.5 rounded-lg bg-forest-900 text-white font-semibold hover:bg-forest-800">Simpan</button>
+              <form method="POST" action="{{ route('admin.facilities.destroy', $facility) }}" class="inline" onsubmit="return confirm('Hapus {{ $facility->name }}?')">
                 @csrf @method('DELETE')
-                <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-700 font-semibold hover:bg-red-100">Delete</button>
+                <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-700 font-semibold hover:bg-red-100">Hapus</button>
               </form>
             </td>
           </tr>
@@ -318,21 +318,21 @@
     </div>
   </div>
 
-  <!-- TAB 3: GALLERY MEDIA UPLOAD & CRUD -->
+  <!-- TAB 3: UNGGAH & CRUD MEDIA GALERI -->
   <div x-show="activeTab === 'galleries'" x-cloak class="grid grid-cols-1 lg:grid-cols-12 gap-8"
     x-data="{ uploadMode: 'file', previewUrl: null }">
 
-    <!-- Upload Form -->
+    <!-- Formulir Unggah -->
     <div class="lg:col-span-5 bg-white rounded-2xl p-6 shadow-sm border border-stone-200 space-y-4">
-      <h2 class="font-serif text-xl font-bold text-forest-900">Upload Gallery Photo</h2>
+      <h2 class="font-serif text-xl font-bold text-forest-900">Unggah Foto Galeri</h2>
 
       <div class="flex gap-2 text-xs font-semibold">
         <button type="button" @click="uploadMode = 'file'"
           :class="uploadMode === 'file' ? 'bg-forest-900 text-white' : 'bg-stone-100 text-stone-700'"
-          class="px-3 py-1.5 rounded-xl">Upload Local Image</button>
+          class="px-3 py-1.5 rounded-xl">Unggah Gambar Lokal</button>
         <button type="button" @click="uploadMode = 'url'"
           :class="uploadMode === 'url' ? 'bg-forest-900 text-white' : 'bg-stone-100 text-stone-700'"
-          class="px-3 py-1.5 rounded-xl">External Stock URL</button>
+          class="px-3 py-1.5 rounded-xl">URL Stok Eksternal</button>
       </div>
 
       <form method="POST" action="{{ route('admin.galleries.store') }}" enctype="multipart/form-data" class="space-y-3 text-xs">
@@ -340,55 +340,55 @@
         <input type="hidden" name="upload_mode" :value="uploadMode">
 
         <div>
-          <label class="block font-bold text-stone-600 mb-1">Photo Title</label>
-          <input name="title" placeholder="e.g., Sunrise Mist at Ridge A1" required class="w-full rounded-xl border-stone-300 text-xs">
+          <label class="block font-bold text-stone-600 mb-1">Judul Foto</label>
+          <input name="title" placeholder="mis., Kabut Pagi di Ridge A1" required class="w-full rounded-xl border-stone-300 text-xs">
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block font-bold text-stone-600 mb-1">Category</label>
+            <label class="block font-bold text-stone-600 mb-1">Kategori</label>
             <select name="category" class="w-full rounded-xl border-stone-300 text-xs">
-              <option value="camping_area">camping_area</option>
-              <option value="ambiance">ambiance</option>
-              <option value="facilities">facilities</option>
-              <option value="hero">hero</option>
+              <option value="camping_area">area_kemah</option>
+              <option value="ambiance">suasana</option>
+              <option value="facilities">fasilitas</option>
+              <option value="hero">utama</option>
             </select>
           </div>
           <div>
-            <label class="block font-bold text-stone-600 mb-1">Photographer / Credit</label>
-            <input name="photographer_name" placeholder="Bukit Embun Team" class="w-full rounded-xl border-stone-300 text-xs">
+            <label class="block font-bold text-stone-600 mb-1">Fotografer / Kredit</label>
+            <input name="photographer_name" placeholder="Tim Bukit Embun" class="w-full rounded-xl border-stone-300 text-xs">
           </div>
         </div>
 
-        <!-- File Upload Input -->
+        <!-- Input Unggah Berkas -->
         <div x-show="uploadMode === 'file'" class="space-y-2">
-          <label class="block font-bold text-stone-600">Select Image File (JPG, PNG, WEBP &bull; Max 5MB)</label>
+          <label class="block font-bold text-stone-600">Pilih Berkas Gambar (JPG, PNG, WEBP &bull; Maks. 5MB)</label>
           <input type="file" name="image_file" accept="image/jpeg,image/png,image/webp"
             @change="previewUrl = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null"
             class="w-full text-xs file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-emerald-50 file:text-forest-900 file:font-semibold">
           <img x-show="previewUrl" :src="previewUrl" class="w-full h-40 object-cover rounded-xl border border-stone-200 mt-2">
         </div>
 
-        <!-- External URL Input -->
+        <!-- Input URL Eksternal -->
         <div x-show="uploadMode === 'url'" class="space-y-2">
-          <input name="image_url" placeholder="Full Image URL (https://...)" class="w-full rounded-xl border-stone-300 text-xs">
-          <input name="thumbnail_url" placeholder="Thumbnail URL (optional)" class="w-full rounded-xl border-stone-300 text-xs">
+          <input name="image_url" placeholder="URL Gambar Lengkap (https://...)" class="w-full rounded-xl border-stone-300 text-xs">
+          <input name="thumbnail_url" placeholder="URL Thumbnail (opsional)" class="w-full rounded-xl border-stone-300 text-xs">
         </div>
 
         <label class="flex items-center gap-2 pt-1 cursor-pointer">
           <input type="checkbox" name="is_featured" value="1" class="rounded border-stone-300 text-forest-900">
-          <span class="font-semibold text-stone-700">Set as Featured (Hero / Top Highlight)</span>
+          <span class="font-semibold text-stone-700">Jadikan Unggulan (Hero / Sorotan Utama)</span>
         </label>
 
         <button type="submit" class="w-full py-2.5 rounded-xl bg-terracotta-600 hover:bg-terracotta-700 text-white font-bold text-xs shadow cursor-pointer">
-          Publish to Gallery
+          Terbitkan ke Galeri
         </button>
       </form>
     </div>
 
-    <!-- Gallery Grid -->
+    <!-- Grid Galeri -->
     <div class="lg:col-span-7 bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
-      <h2 class="font-serif text-xl font-bold text-forest-900 mb-4">Published Gallery Assets</h2>
+      <h2 class="font-serif text-xl font-bold text-forest-900 mb-4">Aset Galeri Terbit</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[560px] overflow-y-auto pr-1">
         @foreach($galleries as $photo)
         <div class="rounded-xl border border-stone-200 overflow-hidden bg-stone-50 flex flex-col">
@@ -400,18 +400,18 @@
                 <span class="text-[10px] uppercase text-stone-400 font-semibold">{{ $photo->source_provider }}</span>
               </div>
               <p class="font-bold text-stone-900 mt-1.5">{{ $photo->title }}</p>
-              <p class="text-[11px] text-stone-500">By {{ $photo->photographer_name }}</p>
+              <p class="text-[11px] text-stone-500">Oleh {{ $photo->photographer_name }}</p>
             </div>
             <div class="flex items-center justify-between pt-3 mt-2 border-t border-stone-200/70">
               <form method="POST" action="{{ route('admin.galleries.toggle-featured', $photo) }}">
                 @csrf @method('PATCH')
                 <button type="submit" class="font-semibold {{ $photo->is_featured ? 'text-amber-600' : 'text-stone-400 hover:text-stone-700' }}">
-                  {{ $photo->is_featured ? '★ Featured' : '☆ Feature' }}
+                  {{ $photo->is_featured ? '★ Unggulan' : '☆ Jadikan Unggulan' }}
                 </button>
               </form>
-              <form method="POST" action="{{ route('admin.galleries.destroy', $photo) }}" onsubmit="return confirm('Delete this gallery photo?')">
+              <form method="POST" action="{{ route('admin.galleries.destroy', $photo) }}" onsubmit="return confirm('Hapus foto galeri ini?')">
                 @csrf @method('DELETE')
-                <button type="submit" class="text-red-600 hover:underline font-semibold">Delete</button>
+                <button type="submit" class="text-red-600 hover:underline font-semibold">Hapus</button>
               </form>
             </div>
           </div>
@@ -421,18 +421,18 @@
     </div>
   </div>
 
-  <!-- TAB 4: RECENT TRANSACTIONS -->
+  <!-- TAB 4: TRANSAKSI TERBARU -->
   <div x-show="activeTab === 'transactions'" x-cloak class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
-    <h2 class="font-serif text-xl font-bold text-forest-900 mb-4">Recent Transactions</h2>
+    <h2 class="font-serif text-xl font-bold text-forest-900 mb-4">Transaksi Terbaru</h2>
     <div class="overflow-x-auto">
       <table class="w-full text-left text-xs">
         <thead class="uppercase text-stone-400 border-b">
           <tr>
-            <th class="py-2">Booking Code</th>
-            <th>Visitor</th>
-            <th>Plots</th>
-            <th>Dates</th>
-            <th>Guests</th>
+            <th class="py-2">Kode Booking</th>
+            <th>Pengunjung</th>
+            <th>Kapling</th>
+            <th>Tanggal</th>
+            <th>Tamu</th>
             <th>Total</th>
             <th>Status</th>
             <th>Check-In</th>
@@ -445,7 +445,7 @@
             <td>{{ $res->user->name }}</td>
             <td class="font-medium">{{ $res->area_names }}</td>
             <td>{{ $res->check_in_date->format('d M') }} – {{ $res->check_out_date->format('d M Y') }}</td>
-            <td>{{ $res->guest_count }} pax</td>
+            <td>{{ $res->guest_count }} orang</td>
             <td class="font-semibold">Rp {{ number_format($res->total_price, 0, ',', '.') }}</td>
             <td>
               <span class="px-2 py-0.5 rounded-full font-bold uppercase
@@ -453,7 +453,7 @@
                 {{ $res->payment_status }}
               </span>
             </td>
-            <td>{{ $res->ticket?->is_checked_in ? 'Checked In' : '—' }}</td>
+            <td>{{ $res->ticket?->is_checked_in ? 'Sudah Check-In' : '—' }}</td>
           </tr>
           @endforeach
         </tbody>

@@ -1,16 +1,16 @@
 @extends('layouts.nature')
 
-@section('title', 'My Reservations & E-Tickets — Bukit Embun')
+@section('title', 'Reservasi & E-Tiket Saya — Bukit Embun')
 
 @section('content')
 <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
   <div class="flex justify-between items-center mb-8">
     <div>
-      <h1 class="font-serif text-3xl font-bold text-forest-900">My Reservations &amp; Passes</h1>
-      <p class="text-sm text-stone-500 mt-1">View your booking history and download scannable QR entry passes.</p>
+      <h1 class="font-serif text-3xl font-bold text-forest-900">Reservasi &amp; Tiket Masuk Saya</h1>
+      <p class="text-sm text-stone-500 mt-1">Lihat riwayat pemesanan Anda dan unduh tiket masuk QR yang dapat dipindai.</p>
     </div>
     <a href="{{ route('booking.index') }}" class="px-4 py-2.5 rounded-xl bg-terracotta-600 text-white text-sm font-semibold shadow hover:bg-terracotta-700">
-      + New Booking
+      + Pemesanan Baru
     </a>
   </div>
 
@@ -26,14 +26,14 @@
           </span>
           @if($reservation->areas->count() > 1)
           <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-            {{ $reservation->areas->count() }} Plots
+            {{ $reservation->areas->count() }} Kapling
           </span>
           @endif
         </div>
         <h3 class="font-serif text-lg font-bold text-stone-900 mt-1">{{ $reservation->area_names }}</h3>
         <p class="text-xs text-stone-500">
           {{ $reservation->check_in_date->format('d M Y') }} &rarr; {{ $reservation->check_out_date->format('d M Y') }}
-          ({{ $reservation->duration_nights }} night) &bull; {{ $reservation->guest_count }} guest(s)
+          ({{ $reservation->duration_nights }} malam) &bull; {{ $reservation->guest_count }} tamu
         </p>
       </div>
 
@@ -46,16 +46,16 @@
         @if($reservation->ticket)
         <a href="{{ route('tickets.show', $reservation->ticket) }}"
           class="px-4 py-2.5 rounded-xl bg-forest-900 text-white text-xs font-semibold hover:bg-forest-800 shadow">
-          View QR E-Ticket
+          Lihat E-Tiket QR
         </a>
         @endif
       </div>
     </div>
     @empty
     <div class="bg-white rounded-2xl p-12 text-center border border-stone-200">
-      <p class="text-stone-500 text-sm">You have no campsite reservations yet.</p>
+      <p class="text-stone-500 text-sm">Anda belum memiliki reservasi kapling kemah.</p>
       <a href="{{ route('booking.index') }}" class="inline-block mt-4 px-5 py-2.5 rounded-xl bg-forest-900 text-white text-sm font-semibold">
-        Explore Campsite Map
+        Jelajahi Peta Perkemahan
       </a>
     </div>
     @endforelse

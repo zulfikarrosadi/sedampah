@@ -1,6 +1,6 @@
 @extends('layouts.nature')
 
-@section('title', 'Select Camping Plots — Bukit Embun')
+@section('title', 'Pilih Kapling Kemah — Bukit Embun')
 
 @section('content')
 <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8"
@@ -18,21 +18,21 @@
          ticketsUrl: @js(route('visitor.tickets'))
      })">
 
-  <!-- Date & Guest Filter Bar -->
+  <!-- Bilah Filter Tanggal & Tamu -->
   <div class="bg-white rounded-2xl p-5 shadow-sm border border-stone-200/80 mb-6 flex flex-col lg:flex-row lg:items-end justify-between gap-4">
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
       <div>
-        <label class="block text-xs font-bold uppercase text-stone-500 mb-1">Check-In Date</label>
+        <label class="block text-xs font-bold uppercase text-stone-500 mb-1">Tanggal Check-In</label>
         <input type="date" x-model="checkIn" @change="refreshAvailability()" min="{{ now()->toDateString() }}"
           class="w-full rounded-xl border-stone-300 text-sm focus:ring-forest-800 focus:border-forest-800">
       </div>
       <div>
-        <label class="block text-xs font-bold uppercase text-stone-500 mb-1">Check-Out Date</label>
+        <label class="block text-xs font-bold uppercase text-stone-500 mb-1">Tanggal Check-Out</label>
         <input type="date" x-model="checkOut" @change="refreshAvailability()" :min="checkIn"
           class="w-full rounded-xl border-stone-300 text-sm focus:ring-forest-800 focus:border-forest-800">
       </div>
       <div>
-        <label class="block text-xs font-bold uppercase text-stone-500 mb-1">Total Group Guests</label>
+        <label class="block text-xs font-bold uppercase text-stone-500 mb-1">Total Tamu Rombongan</label>
         <input type="number" x-model.number="guestCount" min="1" max="100"
           class="w-full rounded-xl border-stone-300 text-sm focus:ring-forest-800 focus:border-forest-800">
       </div>
@@ -40,25 +40,25 @@
 
     <div class="flex flex-wrap items-center gap-2.5 text-xs">
       <span class="px-3 py-2 rounded-xl bg-emerald-50 text-forest-900 font-semibold border border-emerald-200">
-        Daily Quota Left: <strong x-text="remainingQuota"></strong> bookings
+        Sisa Kuota Harian: <strong x-text="remainingQuota"></strong> pemesanan
       </span>
       <span class="px-3 py-2 rounded-xl bg-sand-50 text-amber-900 font-semibold border border-amber-200">
-        Stay: <strong x-text="nights"></strong> night(s)
+        Durasi: <strong x-text="nights"></strong> malam
       </span>
     </div>
   </div>
 
-  <!-- Full-Width Interactive Campsite Map -->
+  <!-- Peta Perkemahan Interaktif Lebar Penuh -->
   <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-stone-200/80 mb-8">
-    <!-- Header + Zoom Controls -->
+    <!-- Header + Kontrol Perbesaran -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
       <div>
-        <h2 class="font-serif text-2xl font-bold text-forest-900">Bukit Embun Campsite Map</h2>
-        <p class="text-xs text-stone-500">Click one or multiple green plots to accommodate your group size.</p>
+        <h2 class="font-serif text-2xl font-bold text-forest-900">Peta Perkemahan Bukit Embun</h2>
+        <p class="text-xs text-stone-500">Klik satu atau beberapa kapling hijau untuk menyesuaikan kapasitas rombongan Anda.</p>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
-        <!-- Zoom Controls -->
+        <!-- Kontrol Perbesaran -->
         <div class="inline-flex rounded-xl border border-stone-200 bg-stone-50 p-0.5 text-xs font-semibold">
           <button type="button" @click="zoom = 1" :class="zoom === 1 ? 'bg-forest-900 text-white' : 'text-stone-600'" class="px-2.5 py-1 rounded-lg transition">100%</button>
           <button type="button" @click="zoom = 1.25" :class="zoom === 1.25 ? 'bg-forest-900 text-white' : 'text-stone-600'" class="px-2.5 py-1 rounded-lg transition">125%</button>
@@ -67,7 +67,7 @@
       </div>
     </div>
 
-    <!-- Zone Filter Pills & Legend -->
+    <!-- Pil Filter Zona & Legenda -->
     <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-stone-100 mb-4">
       <div class="flex flex-wrap gap-1.5 text-xs font-semibold">
         <template x-for="zone in zones" :key="zone">
@@ -75,92 +75,92 @@
             @click="activeZone = zone"
             :class="activeZone === zone ? 'bg-forest-900 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'"
             class="px-3 py-1.5 rounded-xl transition cursor-pointer"
-            x-text="zone"></button>
+            x-text="zone === 'All Zones' ? 'Semua Zona' : zone"></button>
         </template>
       </div>
 
       <div class="flex items-center gap-4 text-xs font-medium">
-        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-[#2D6A4F] inline-block"></span> Available</span>
-        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-[#DDA15E] ring-2 ring-amber-700 inline-block"></span> Selected</span>
-        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-stone-300 inline-block"></span> Booked / Maint.</span>
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-[#2D6A4F] inline-block"></span> Tersedia</span>
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-[#DDA15E] ring-2 ring-amber-700 inline-block"></span> Dipilih</span>
+        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-stone-300 inline-block"></span> Terisi / Perbaikan</span>
       </div>
     </div>
 
-    <!-- Hover Tooltip Banner -->
+    <!-- Spanduk Tooltip Hover -->
     <div class="min-h-[36px] mb-3 px-3.5 py-2 rounded-xl bg-stone-50 border border-stone-200/70 flex items-center justify-between text-xs">
       <template x-if="hoveredPlot">
         <div class="flex flex-wrap items-center gap-3">
           <span class="font-bold text-forest-900" x-text="hoveredPlot.name"></span>
           <span class="text-stone-500" x-text="hoveredPlot.layout_coordinates.zone"></span>
-          <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-semibold" x-text="`Max ${hoveredPlot.capacity} guests`"></span>
-          <span class="font-bold text-terracotta-600" x-text="formatRupiah(hoveredPlot.price_per_night) + ' / night'"></span>
+          <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-semibold" x-text="`Maks. ${hoveredPlot.capacity} tamu`"></span>
+          <span class="font-bold text-terracotta-600" x-text="formatRupiah(hoveredPlot.price_per_night) + ' / malam'"></span>
         </div>
       </template>
       <template x-if="!hoveredPlot">
-        <span class="text-stone-400">Hover or tap any plot on the map to inspect elevation, capacity, and nightly rate.</span>
+        <span class="text-stone-400">Arahkan kursor atau ketuk kapling mana pun di peta untuk melihat ketinggian, kapasitas, dan tarif per malam.</span>
       </template>
     </div>
 
-    <!-- Full-Width Responsive / Zoomable 1200x800 SVG Canvas -->
+    <!-- Kanvas SVG 1200x800 Responsif / Dapat Diperbesar Lebar Penuh -->
     <div class="relative overflow-auto max-h-[760px] rounded-2xl border border-emerald-900/20 bg-[#eaf4ec]">
       <div :style="zoom === 1 ? 'width: 100%;' : `width: ${zoom * 100}%;`" class="transition-all duration-200">
-        <svg viewBox="0 0 1200 800" class="w-full h-auto block select-none" role="img" aria-label="Bukit Embun 1200x800 Interactive Campsite Map">
+        <svg viewBox="0 0 1200 800" class="w-full h-auto block select-none" role="img" aria-label="Peta Perkemahan Interaktif Bukit Embun 1200x800">
           <defs>
             <pattern id="bookedHatch" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
               <line x1="0" y1="0" x2="0" y2="10" stroke="#94a3b8" stroke-width="3.5" />
             </pattern>
           </defs>
 
-          <!-- Topographic Contour Lines -->
+          <!-- Garis Kontur Topografi -->
           <path d="M 0,80 Q 450,25 1200,75" fill="none" stroke="#b7e4c7" stroke-width="2.5" stroke-dasharray="8 6" />
           <path d="M 0,275 Q 600,245 1200,285" fill="none" stroke="#b7e4c7" stroke-width="2.5" stroke-dasharray="8 6" />
           <path d="M 0,520 Q 580,490 1200,530" fill="none" stroke="#b7e4c7" stroke-width="2.5" stroke-dasharray="8 6" />
 
-          <!-- Zone Region Backdrops -->
+          <!-- Latar Belakang Area Zona -->
           <rect x="450" y="65" width="710" height="205" rx="20" fill="#d8f3dc" opacity="0.45" />
-          <text x="470" y="85" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONE A &bull; SUNRISE RIDGE (1,425 MDPL)</text>
+          <text x="470" y="85" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONA A &bull; SUNRISE RIDGE (1.425 MDPL)</text>
 
           <rect x="50" y="285" width="595" height="210" rx="20" fill="#d8f3dc" opacity="0.45" />
-          <text x="70" y="305" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONE B &bull; PINE GROVE WOODLAND</text>
+          <text x="70" y="305" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONA B &bull; PINE GROVE WOODLAND</text>
 
           <rect x="670" y="285" width="490" height="210" rx="20" fill="#d8f3dc" opacity="0.45" />
-          <text x="690" y="305" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONE C &bull; MIST VALLEY TERRACE</text>
+          <text x="690" y="305" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONA C &bull; MIST VALLEY TERRACE</text>
 
           <rect x="430" y="540" width="730" height="225" rx="20" fill="#d8f3dc" opacity="0.45" />
-          <text x="450" y="560" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONE D &bull; STARLIGHT OBSERVATION PLATEAU</text>
+          <text x="450" y="560" font-size="11" font-weight="bold" fill="#1b4332" letter-spacing="1.5">ZONA D &bull; STARLIGHT OBSERVATION PLATEAU</text>
 
-          <!-- Main Hiking Trails -->
+          <!-- Jalur Pendakian Utama -->
           <path d="M 130,175 L 130,275 L 1140,275" fill="none" stroke="#d4a373" stroke-width="7" stroke-linecap="round" opacity="0.75" />
           <path d="M 655,275 L 655,525 L 1140,525" fill="none" stroke="#d4a373" stroke-width="7" stroke-linecap="round" opacity="0.75" />
-          <text x="240" y="268" font-size="10" fill="#7f5539" font-weight="bold" letter-spacing="1">NORTH RIDGE TRAIL</text>
-          <text x="760" y="518" font-size="10" fill="#7f5539" font-weight="bold" letter-spacing="1">SOUTH PLATEAU BOARDWALK</text>
+          <text x="240" y="268" font-size="10" fill="#7f5539" font-weight="bold" letter-spacing="1">JALUR PUNGGUNG UTARA</text>
+          <text x="760" y="518" font-size="10" fill="#7f5539" font-weight="bold" letter-spacing="1">JALAN KAYU DATARAN SELATAN</text>
 
-          <!-- Environmental Landmarks -->
+          <!-- Penanda Lokasi Lingkungan -->
           <g transform="translate(55, 75)">
             <rect width="150" height="64" rx="14" fill="#1B4332" />
-            <text x="75" y="28" text-anchor="middle" font-size="12" fill="#fefae0" font-weight="bold">MAIN GATE &amp; QR</text>
-            <text x="75" y="46" text-anchor="middle" font-size="10" fill="#95d5b2">Check-In &amp; Gear Hub</text>
+            <text x="75" y="28" text-anchor="middle" font-size="12" fill="#fefae0" font-weight="bold">GERBANG UTAMA &amp; QR</text>
+            <text x="75" y="46" text-anchor="middle" font-size="10" fill="#95d5b2">Pusat Check-In &amp; Alat</text>
           </g>
 
           <g transform="translate(230, 75)">
             <rect width="185" height="64" rx="14" fill="#fefae0" stroke="#dda15e" stroke-width="2" />
-            <text x="92" y="28" text-anchor="middle" font-size="11" fill="#9c5518" font-weight="bold">&#9728; SUNRISE VIEWPOINT</text>
-            <text x="92" y="45" text-anchor="middle" font-size="9.5" fill="#7f5539">Eastern Cliff Overlook</text>
+            <text x="92" y="28" text-anchor="middle" font-size="11" fill="#9c5518" font-weight="bold">&#9728; GARDU PANDANG TERBIT</text>
+            <text x="92" y="45" text-anchor="middle" font-size="9.5" fill="#7f5539">Tebing Pandang Timur</text>
           </g>
 
           <g transform="translate(70, 560)">
             <circle cx="65" cy="65" r="55" fill="#bc6c25" opacity="0.92" />
-            <text x="65" y="61" text-anchor="middle" font-size="12" fill="#fff" font-weight="bold">CAMPFIRE</text>
-            <text x="65" y="77" text-anchor="middle" font-size="10" fill="#fefae0">Amphitheater</text>
+            <text x="65" y="61" text-anchor="middle" font-size="12" fill="#fff" font-weight="bold">API UNGGUN</text>
+            <text x="65" y="77" text-anchor="middle" font-size="10" fill="#fefae0">Amfiteater</text>
           </g>
 
           <g transform="translate(235, 580)">
             <rect width="155" height="52" rx="12" fill="#475569" />
-            <text x="77" y="24" text-anchor="middle" font-size="11" fill="#f8fafc" font-weight="bold">WASHROOMS</text>
-            <text x="77" y="39" text-anchor="middle" font-size="9.5" fill="#cbd5e1">Hot Showers &amp; Prayer Room</text>
+            <text x="77" y="24" text-anchor="middle" font-size="11" fill="#f8fafc" font-weight="bold">KAMAR MANDI</text>
+            <text x="77" y="39" text-anchor="middle" font-size="9.5" fill="#cbd5e1">Air Hangat &amp; Musala</text>
           </g>
 
-          <!-- Dynamic Camping Plots -->
+          <!-- Kapling Kemah Dinamis -->
           @foreach($availability['plots'] as $plotItem)
           @php
           $coords = $plotItem['layout_coordinates'];
@@ -174,7 +174,7 @@
             :tabindex="isPlotAvailable({{ $plotItem['id'] }}) ? 0 : -1"
             role="button"
             :aria-pressed="isPlotSelected({{ $plotItem['id'] }}) ? 'true' : 'false'"
-            :aria-label="`{{ $plotItem['name'] }} - Max {{ $plotItem['capacity'] }} guests`"
+            :aria-label="`{{ $plotItem['name'] }} - Maks. {{ $plotItem['capacity'] }} tamu`"
             data-area-id="{{ $plotItem['id'] }}"
             :data-status="getPlotStatus({{ $plotItem['id'] }})"
             :opacity="(activeZone === 'All Zones' || activeZone === @js($plotZone)) ? 1 : 0.25"
@@ -201,7 +201,7 @@
               text-anchor="middle"
               font-size="10"
               :fill="isPlotSelected({{ $plotItem['id'] }}) ? '#1B4332' : (isPlotAvailable({{ $plotItem['id'] }}) ? '#d8f3dc' : '#64748b')"
-              x-text="isPlotSelected({{ $plotItem['id'] }}) ? '✓ {{ $plotItem['capacity'] }}p' : (isPlotAvailable({{ $plotItem['id'] }}) ? '{{ $plotItem['capacity'] }} pax' : 'FULL')">
+              x-text="isPlotSelected({{ $plotItem['id'] }}) ? '✓ {{ $plotItem['capacity'] }} org' : (isPlotAvailable({{ $plotItem['id'] }}) ? '{{ $plotItem['capacity'] }} org' : 'PENUH')">
             </text>
           </g>
           @endforeach
@@ -210,19 +210,19 @@
     </div>
   </div>
 
-  <!-- 2-Column Section Below Map: Directory & Add-Ons (Left) + Sticky Summary (Right) -->
+  <!-- Bagian 2 Kolom di Bawah Peta: Direktori & Tambahan (Kiri) + Ringkasan Melayang (Kanan) -->
   <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-    <!-- Left 8 Cols: Plot Directory + Equipment Add-Ons -->
+    <!-- 8 Kolom Kiri: Direktori Kapling + Tambahan Perlengkapan -->
     <div class="xl:col-span-8 space-y-8">
-      <!-- Accessible Synchronized Card Selector Fallback -->
+      <!-- Pemilih Kartu Tersinkronisasi yang Mudah Diakses -->
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200/80">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-xs font-bold uppercase tracking-wider text-stone-500">
-            Plot Directory (<span x-text="filteredPlots.length"></span> plots)
+            Direktori Kapling (<span x-text="filteredPlots.length"></span> kapling)
           </h3>
           <button type="button" x-show="selectedPlotIds.length > 0" @click="selectedPlotIds = []"
             class="text-xs text-red-600 hover:underline font-semibold">
-            Clear Selection
+            Hapus Pilihan
           </button>
         </div>
 
@@ -241,19 +241,19 @@
                 <span class="font-bold text-sm text-forest-900" x-text="plot.name"></span>
                 <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0"
                   :class="isPlotSelected(plot.id) ? 'bg-amber-200 text-amber-950' : (plot.is_available ? 'bg-emerald-100 text-forest-900' : 'bg-stone-200 text-stone-600')"
-                  x-text="isPlotSelected(plot.id) ? 'Selected' : (plot.is_available ? 'Available' : plot.status)"></span>
+                  x-text="isPlotSelected(plot.id) ? 'Dipilih' : (plot.is_available ? 'Tersedia' : plot.status)"></span>
               </div>
-              <p class="text-xs text-stone-500 mt-1" x-text="`Max ${plot.capacity} guests • ${plot.layout_coordinates.zone || ''}`"></p>
-              <p class="text-sm font-bold text-terracotta-600 mt-1.5" x-text="formatRupiah(plot.price_per_night) + ' / night'"></p>
+              <p class="text-xs text-stone-500 mt-1" x-text="`Maks. ${plot.capacity} tamu • ${plot.layout_coordinates.zone || ''}`"></p>
+              <p class="text-sm font-bold text-terracotta-600 mt-1.5" x-text="formatRupiah(plot.price_per_night) + ' / malam'"></p>
             </button>
           </template>
         </div>
       </div>
 
-      <!-- Equipment Add-On Selector -->
+      <!-- Pemilih Tambahan Perlengkapan -->
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200/80">
-        <h3 class="font-serif text-xl font-bold text-forest-900">Camping Gear &amp; Equipment Add-Ons</h3>
-        <p class="text-xs text-stone-500 mb-4">Optional rental gear delivered straight to your plot upon check-in.</p>
+        <h3 class="font-serif text-xl font-bold text-forest-900">Tambahan Alat &amp; Perlengkapan Kemah</h3>
+        <p class="text-xs text-stone-500 mb-4">Perlengkapan sewa opsional yang diantar langsung ke kapling Anda saat check-in.</p>
 
         <div class="divide-y divide-stone-100">
           <template x-for="item in facilities" :key="item.id">
@@ -262,7 +262,7 @@
                 <p class="font-semibold text-sm text-stone-900" x-text="item.name"></p>
                 <p class="text-xs text-stone-500">
                   <span class="font-semibold text-forest-800" x-text="formatRupiah(item.rental_price)"></span> / <span x-text="item.unit"></span>
-                  &bull; <span x-text="item.stock"></span> in stock
+                  &bull; tersisa <span x-text="item.stock"></span>
                 </p>
               </div>
               <div class="flex items-center gap-2">
@@ -278,22 +278,22 @@
       </div>
     </div>
 
-    <!-- Right 4 Cols: Sticky Multi-Plot Summary & Group Capacity Gauge -->
+    <!-- 4 Kolom Kanan: Ringkasan Multi-Kapling Melayang & Pengukur Kapasitas Rombongan -->
     <div class="xl:col-span-4 sticky top-24">
       <div class="bg-white rounded-2xl p-6 shadow-lg border border-stone-200">
         <div class="flex items-center justify-between border-b border-stone-100 pb-3">
-          <h3 class="font-serif text-xl font-bold text-forest-900">Booking Summary</h3>
+          <h3 class="font-serif text-xl font-bold text-forest-900">Ringkasan Pemesanan</h3>
           <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-forest-100 text-forest-900"
-            x-text="`${selectedPlots.length} Plot(s)`"></span>
+            x-text="`${selectedPlots.length} Kapling`"></span>
         </div>
 
-        <!-- Live Group Capacity Gauge -->
+        <!-- Pengukur Kapasitas Rombongan Langsung -->
         <div class="mt-4 p-3.5 rounded-xl border"
           :class="selectedCapacity >= guestCount ? 'bg-emerald-50/70 border-emerald-200' : 'bg-amber-50 border-amber-300'">
           <div class="flex justify-between text-xs font-bold">
-            <span :class="selectedCapacity >= guestCount ? 'text-emerald-900' : 'text-amber-900'">Group Capacity</span>
+            <span :class="selectedCapacity >= guestCount ? 'text-emerald-900' : 'text-amber-900'">Kapasitas Rombongan</span>
             <span :class="selectedCapacity >= guestCount ? 'text-emerald-900' : 'text-amber-900'"
-              x-text="`${selectedCapacity} / ${guestCount} Guests`"></span>
+              x-text="`${selectedCapacity} / ${guestCount} Tamu`"></span>
           </div>
           <div class="w-full h-2 rounded-full bg-stone-200 mt-2 overflow-hidden">
             <div class="h-full transition-all duration-300"
@@ -301,35 +301,35 @@
               :style="`width: ${Math.min(100, Math.round((selectedCapacity / Math.max(1, guestCount)) * 100))}%`"></div>
           </div>
           <p x-show="selectedCapacity < guestCount" class="text-[11px] text-amber-800 mt-1.5">
-            Select <strong x-text="guestCount - selectedCapacity"></strong> more guest capacity by adding another plot.
+            Pilih kapasitas untuk <strong x-text="guestCount - selectedCapacity"></strong> tamu lagi dengan menambahkan kapling lain.
           </p>
         </div>
 
         <template x-if="selectedPlots.length === 0">
-          <p class="text-sm text-stone-500 py-8 text-center">Click one or more available green plots on the map to build your reservation.</p>
+          <p class="text-sm text-stone-500 py-8 text-center">Klik satu atau beberapa kapling hijau yang tersedia di peta untuk membuat reservasi Anda.</p>
         </template>
 
         <template x-if="selectedPlots.length > 0">
           <div class="mt-4 space-y-4 text-sm">
-            <!-- Selected Plot Pills -->
+            <!-- Pil Kapling Terpilih -->
             <div class="space-y-2 max-h-44 overflow-y-auto pr-1">
               <template x-for="plot in selectedPlots" :key="'sel-' + plot.id">
                 <div class="p-3 rounded-xl bg-sand-50 border border-amber-200 flex items-center justify-between gap-2">
                   <div>
                     <p class="font-bold text-forest-900 text-xs" x-text="plot.name"></p>
-                    <p class="text-[11px] text-stone-500" x-text="`${plot.capacity} pax • ${formatRupiah(plot.price_per_night)} × ${nights} night`"></p>
+                    <p class="text-[11px] text-stone-500" x-text="`${plot.capacity} org • ${formatRupiah(plot.price_per_night)} × ${nights} malam`"></p>
                   </div>
                   <div class="text-right">
                     <p class="font-bold text-xs text-stone-900" x-text="formatRupiah(plot.price_per_night * nights)"></p>
-                    <button type="button" @click="togglePlot(plot)" class="text-[10px] text-red-600 hover:underline">Remove</button>
+                    <button type="button" @click="togglePlot(plot)" class="text-[10px] text-red-600 hover:underline">Hapus</button>
                   </div>
                 </div>
               </template>
             </div>
 
-            <!-- Gear Add-On Line Items -->
+            <!-- Rincian Tambahan Perlengkapan -->
             <div x-show="cartEntries.length > 0" class="space-y-1.5 border-t border-stone-100 pt-3">
-              <p class="text-xs font-bold uppercase text-stone-400">Equipment Add-Ons</p>
+              <p class="text-xs font-bold uppercase text-stone-400">Tambahan Perlengkapan</p>
               <template x-for="entry in cartEntries" :key="entry.id">
                 <div class="flex justify-between text-xs text-stone-600">
                   <span x-text="`${entry.name} × ${entry.qty}`"></span>
@@ -339,7 +339,7 @@
             </div>
 
             <div class="flex justify-between items-center text-base font-bold text-forest-900 border-t border-stone-200 pt-3">
-              <span>Total Payment</span>
+              <span>Total Pembayaran</span>
               <span class="text-xl text-terracotta-600" x-text="formatRupiah(grandTotal)"></span>
             </div>
 
@@ -349,8 +349,8 @@
               @click="submitCheckout()"
               :disabled="submitting || selectedCapacity < guestCount"
               class="w-full py-3.5 rounded-xl bg-terracotta-600 hover:bg-terracotta-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm shadow-lg transition cursor-pointer">
-              <span x-show="!submitting">Pay via Midtrans &rarr;</span>
-              <span x-show="submitting">Preparing Snap Checkout...</span>
+              <span x-show="!submitting">Bayar via Midtrans &rarr;</span>
+              <span x-show="submitting">Menyiapkan Pembayaran Snap...</span>
             </button>
           </div>
         </template>
@@ -542,7 +542,7 @@
               window.location.href = config.ticketsUrl;
             },
             onError: () => {
-              this.errorMessage = 'Payment failed or was interrupted.';
+              this.errorMessage = 'Pembayaran gagal atau terputus.';
               this.submitting = false;
             },
             onClose: () => {
@@ -550,7 +550,7 @@
             }
           });
         } catch (e) {
-          this.errorMessage = 'Network error while initiating checkout.';
+          this.errorMessage = 'Terjadi kesalahan jaringan saat memulai pembayaran.';
           this.submitting = false;
         }
       }

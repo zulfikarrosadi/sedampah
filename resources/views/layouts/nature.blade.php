@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="id" class="scroll-smooth">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>@yield('title', 'Bukit Embun — Highland Camping Ground')</title>
+  <title>@yield('title', 'Bukit Embun — Bumi Perkemahan Dataran Tinggi')</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -48,29 +48,29 @@
 </head>
 
 <body class="bg-stone-50 text-stone-800 font-sans antialiased selection:bg-forest-900 selection:text-white">
-  <!-- Floating Glass Navigation -->
+  <!-- Navigasi Kaca Mengambang -->
   <header x-data="{ mobileMenuOpen: false }" class="sticky top-0 z-40 backdrop-blur-md bg-white/80 border-b border-stone-200/70">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <!-- Brand Logo -->
+      <!-- Logo Merek -->
       <a href="{{ route('home') }}" class="flex items-center gap-2.5">
         <span class="w-9 h-9 rounded-xl bg-forest-900 text-amber-200 flex items-center justify-center font-serif font-bold text-lg shadow">BE</span>
         <div>
           <span class="font-serif font-bold text-lg text-forest-900 tracking-tight">Bukit Embun</span>
-          <span class="hidden sm:inline-block text-xs text-stone-500 ml-2">1,420 mdpl Highland Camp</span>
+          <span class="hidden sm:inline-block text-xs text-stone-500 ml-2">Perkemahan Dataran Tinggi 1.420 mdpl</span>
         </div>
       </a>
 
-      <!-- Desktop Navigation -->
+      <!-- Navigasi Desktop -->
       <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
-        <a href="{{ route('home') }}#gallery" class="text-stone-600 hover:text-forest-900 transition">Gallery</a>
-        <a href="{{ route('booking.index') }}" class="text-stone-700 hover:text-forest-900 font-semibold transition">Book Plot</a>
+        <a href="{{ route('home') }}#gallery" class="text-stone-600 hover:text-forest-900 transition">Galeri</a>
+        <a href="{{ route('booking.index') }}" class="text-stone-700 hover:text-forest-900 font-semibold transition">Reservasi</a>
 
         @auth
-        <a href="{{ route('visitor.tickets') }}" class="text-stone-600 hover:text-forest-900 transition">My Tickets</a>
+        <a href="{{ route('visitor.tickets') }}" class="text-stone-600 hover:text-forest-900 transition">Tiket Saya</a>
 
         @if(auth()->user()->isPetugas() || auth()->user()->isAdmin())
         <a href="{{ route('petugas.scan') }}" class="px-3 py-1.5 rounded-xl bg-emerald-100 text-forest-900 font-semibold hover:bg-emerald-200 transition">
-          QR Scanner
+          Pemindai QR
         </a>
         @endif
 
@@ -82,31 +82,31 @@
 
         <form method="POST" action="{{ route('logout') }}" class="inline">
           @csrf
-          <button type="submit" class="text-xs text-stone-500 hover:text-red-600 transition">Logout</button>
+          <button type="submit" class="text-xs text-stone-500 hover:text-red-600 transition">Keluar</button>
         </form>
         @else
-        <a href="{{ route('login') }}" class="text-stone-600 hover:text-forest-900">Sign In</a>
+        <a href="{{ route('login') }}" class="text-stone-600 hover:text-forest-900">Masuk</a>
         @if (Route::has('register'))
-        <a href="{{ route('register') }}" class="text-forest-900 hover:text-terracotta-600 font-semibold">Register</a>
+        <a href="{{ route('register') }}" class="text-forest-900 hover:text-terracotta-600 font-semibold">Daftar</a>
         @endif
         <a href="{{ route('booking.index') }}" class="px-4 py-2 rounded-xl bg-terracotta-600 text-white font-semibold shadow hover:bg-terracotta-700 transition">
-          Reserve Now
+          Reservasi Sekarang
         </a>
         @endauth
       </nav>
 
-      <!-- Mobile Hamburger Button -->
+      <!-- Tombol Hamburger Seluler -->
       <div class="flex items-center md:hidden">
         <button
           @click="mobileMenuOpen = !mobileMenuOpen"
           type="button"
           class="p-2 rounded-xl text-stone-600 hover:text-forest-900 hover:bg-stone-100 focus:outline-none transition"
-          aria-label="Toggle navigation menu">
-          <!-- Hamburger Icon -->
+          aria-label="Alihkan menu navigasi">
+          <!-- Ikon Hamburger -->
           <svg x-show="!mobileMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
-          <!-- Close (X) Icon -->
+          <!-- Ikon Tutup (X) -->
           <svg x-cloak x-show="mobileMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -114,7 +114,7 @@
       </div>
     </div>
 
-    <!-- Mobile Dropdown Menu -->
+    <!-- Menu Dropdown Seluler -->
     <div
       x-cloak
       x-show="mobileMenuOpen"
@@ -127,20 +127,20 @@
       x-transition:leave-end="opacity-0 -translate-y-2"
       class="md:hidden bg-white/95 backdrop-blur-md border-b border-stone-200/70 px-4 pt-2 pb-5 space-y-2 shadow-lg">
       <a href="{{ route('home') }}#gallery" @click="mobileMenuOpen = false" class="block px-3 py-2 rounded-xl text-base font-medium text-stone-600 hover:text-forest-900 hover:bg-stone-100">
-        Gallery
+        Galeri
       </a>
       <a href="{{ route('booking.index') }}" class="block px-3 py-2 rounded-xl text-base font-semibold text-stone-800 hover:text-forest-900 hover:bg-stone-100">
-        Book Plot
+        Reservasi
       </a>
 
       @auth
       <a href="{{ route('visitor.tickets') }}" class="block px-3 py-2 rounded-xl text-base font-medium text-stone-600 hover:text-forest-900 hover:bg-stone-100">
-        My Tickets
+        Tiket Saya
       </a>
 
       @if(auth()->user()->isPetugas() || auth()->user()->isAdmin())
       <a href="{{ route('petugas.scan') }}" class="block px-3 py-2 rounded-xl text-base font-semibold bg-emerald-100 text-forest-900 hover:bg-emerald-200">
-        QR Scanner
+        Pemindai QR
       </a>
       @endif
 
@@ -154,22 +154,22 @@
         <form method="POST" action="{{ route('logout') }}">
           @csrf
           <button type="submit" class="w-full text-left px-3 py-2 rounded-xl text-base font-medium text-red-600 hover:bg-red-50">
-            Logout
+            Keluar
           </button>
         </form>
       </div>
       @else
       <div class="pt-2 border-t border-stone-200/70 flex flex-col gap-2">
         <a href="{{ route('login') }}" class="block px-3 py-2 rounded-xl text-base font-medium text-stone-600 hover:text-forest-900 hover:bg-stone-100">
-          Sign In
+          Masuk
         </a>
         @if (Route::has('register'))
         <a href="{{ route('register') }}" class="block px-3 py-2 rounded-xl text-base font-semibold text-forest-900 hover:text-terracotta-600 hover:bg-stone-100">
-          Register
+          Daftar
         </a>
         @endif
         <a href="{{ route('booking.index') }}" class="block text-center px-4 py-2.5 rounded-xl bg-terracotta-600 text-white font-semibold shadow hover:bg-terracotta-700 transition">
-          Reserve Now
+          Reservasi Sekarang
         </a>
       </div>
       @endauth
@@ -183,10 +183,10 @@
   <footer class="bg-forest-900 text-emerald-100 mt-20">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
       <div>
-        <p class="font-serif text-xl font-bold text-white">Bukit Embun Tourism Camping Ground</p>
-        <p class="text-emerald-300 text-xs mt-1">Digital Reservation, Gear Rental & Instant QR Check-In System</p>
+        <p class="font-serif text-xl font-bold text-white">Bumi Perkemahan Wisata Bukit Embun</p>
+        <p class="text-emerald-300 text-xs mt-1">Sistem Reservasi Digital, Penyewaan Perlengkapan & Check-In QR Instan</p>
       </div>
-      <p class="text-xs text-emerald-300">&copy; {{ date('Y') }} Bukit Embun Highland Sanctuary. All rights reserved.</p>
+      <p class="text-xs text-emerald-300">&copy; {{ date('Y') }} Bukit Embun Highland Sanctuary. Hak cipta dilindungi undang-undang.</p>
     </div>
   </footer>
 
