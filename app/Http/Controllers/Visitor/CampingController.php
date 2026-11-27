@@ -29,7 +29,7 @@ class CampingController extends Controller
       'category' => 'camping_area',
       'title' => 'Punggung Bukit Timur',
       'photographer_name' => 'Tim Bukit Embun',
-      'image_url' => asset('images/bukit-embun/bg-hero.png'),
+      'image_url' => asset('images/bukit-embun/bg-hero.webp'),
     ];
     $galleriesByCategory = Gallery::orderByDesc('is_featured')
       ->latest()

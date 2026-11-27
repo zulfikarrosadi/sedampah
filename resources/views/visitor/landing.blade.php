@@ -7,7 +7,7 @@
 <section class="relative min-h-[88vh] flex items-center justify-center overflow-hidden bg-forest-900">
   @if($heroBanner)
   <img src="{{ $heroBanner->image_url }}" alt="{{ $heroBanner->title }}"
-    class="absolute inset-0 w-full h-full object-cover object-center opacity-35 scale-105">
+    class="absolute inset-0 w-full h-full object-cover object-center scale-105">
   @endif
   <div class="absolute inset-0 bg-gradient-to-b from-forest-900/75 via-forest-900/55 to-stone-50"></div>
 
