@@ -25,10 +25,12 @@ class CampingController extends Controller
 
   public function index(): View
   {
-    $heroBanner = Gallery::where('category', 'hero')
-      ->where('is_featured', true)
-      ->first() ?? Gallery::where('category', 'hero')->first();
-
+    $heroBanner = (object) [
+      'category' => 'camping_area',
+      'title' => 'Punggung Bukit Timur',
+      'photographer_name' => 'Tim Bukit Embun',
+      'image_url' => asset('images/bukit-embun/bg-hero.png'),
+    ];
     $galleriesByCategory = Gallery::orderByDesc('is_featured')
       ->latest()
       ->get()
