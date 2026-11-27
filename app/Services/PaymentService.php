@@ -17,12 +17,18 @@ class PaymentService
   ) {}
 
   /**
-   * Request a Snap transaction token from Midtrans and persist it on the reservation.
+   * Request or reuse a Snap transaction token for an unexpired pending reservation.
    */
   public function createSnapToken(Reservation $reservation): string
   {
     if ($reservation->payment_status !== 'pending') {
       throw new BookingException("Reservation {$reservation->booking_code} is not in pending state.");
+    }
+
+    $expiryMinutes = (int) config('camping.pending_expiry_minutes', 60);
+    if ($reservation->created_at && $reservation->created_at->copy()->addMinutes($expiryMinutes)->isPast()) {
+      $this->bookingService->cancelOrExpireReservation($reservation, 'expired');
+      throw new BookingException("Reservation {$reservation->booking_code} has expired. Please create a new booking.");
     }
 
     if (!empty($reservation->snap_token)) {
@@ -65,18 +71,23 @@ class PaymentService
         'order_id' => $reservation->booking_code,
         'gross_amount' => (int) round((float) $reservation->total_price),
       ],
-      'customer_details' => [
+      'customer_details' => array_filter([
         'first_name' => $reservation->user->name,
         'email' => $reservation->user->email,
-        'phone' => $reservation->user->phone ?? '',
-      ],
+        'phone' => $reservation->user->phone ?: null,
+      ]),
       'item_details' => $itemDetails,
     ];
 
     $serverKey = (string) config('midtrans.server_key');
+    $baseUrl = config('midtrans.snap_base_url')
+      ?: (config('midtrans.is_production')
+        ? 'https://app.midtrans.com/snap/v1'
+        : 'https://app.sandbox.midtrans.com/snap/v1');
+
     $response = Http::withBasicAuth($serverKey, '')
       ->acceptJson()
-      ->post(config('midtrans.snap_base_url') . '/transactions', $payload);
+      ->post(rtrim($baseUrl, '/') . '/transactions', $payload);
 
     if ($response->failed() || empty($response->json('token'))) {
       Log::error('Midtrans Snap token creation failed', [

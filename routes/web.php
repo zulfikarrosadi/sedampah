@@ -23,6 +23,13 @@ Route::middleware(['auth'])->group(function () {
   Route::post('/booking/checkout', [CampingController::class, 'checkout'])->name('booking.checkout');
   Route::get('/my-tickets', [CampingController::class, 'myTickets'])->name('visitor.tickets');
   Route::get('/tickets/{ticket}', [CampingController::class, 'showTicket'])->name('tickets.show');
+
+  Route::get('/reservations/{reservation}/pay', [CampingController::class, 'payReservation'])
+    ->name('visitor.reservations.pay');
+  Route::post('/reservations/{reservation}/retry-token', [CampingController::class, 'retrySnapToken'])
+    ->name('visitor.reservations.retry-token');
+  Route::post('/reservations/{reservation}/cancel', [CampingController::class, 'cancelReservation'])
+    ->name('visitor.reservations.cancel');
 });
 
 // Staff (Petugas) Scanner Portal

@@ -12,7 +12,9 @@ use App\Models\Ticket;
 use App\Services\BookingService;
 use App\Services\PaymentService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Throwable;
 
@@ -189,5 +191,95 @@ class CampingController extends Controller
       'ticket' => $ticket,
       'reservation' => $ticket->reservation,
     ]);
+  }
+
+  public function payReservation(Request $request, Reservation $reservation): View|RedirectResponse
+  {
+    if ($reservation->user_id !== $request->user()->id) {
+      abort(403);
+    }
+
+    if ($reservation->payment_status !== 'pending') {
+      return redirect()->route('visitor.tickets')
+        ->with('status', "Reservation {$reservation->booking_code} is currently '{$reservation->payment_status}'.");
+    }
+
+    $expiryMinutes = (int) config('camping.pending_expiry_minutes', 60);
+    $expiresAt = $reservation->created_at->copy()->addMinutes($expiryMinutes);
+
+    try {
+      $snapToken = $this->paymentService->createSnapToken($reservation);
+    } catch (BookingException $e) {
+      return redirect()->route('visitor.tickets')
+        ->with('error', $e->getMessage());
+    }
+
+    $reservation->load(['campingArea', 'areas.campingArea', 'items.facility']);
+
+    return view('visitor.retry-payment', [
+      'reservation' => $reservation,
+      'snapToken' => $snapToken,
+      'expiresAtIso' => $expiresAt->toIso8601String(),
+      'snapJsUrl' => config('midtrans.snap_js_url'),
+      'midtransClientKey' => config('midtrans.client_key'),
+    ]);
+  }
+
+  public function retrySnapToken(Request $request, Reservation $reservation): JsonResponse
+  {
+    if ($reservation->user_id !== $request->user()->id) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Unauthorized access to this reservation.',
+        'data' => null,
+      ], 403);
+    }
+
+    try {
+      $snapToken = $this->paymentService->createSnapToken($reservation);
+
+      return response()->json([
+        'success' => true,
+        'message' => 'Payment session ready.',
+        'data' => [
+          'booking_code' => $reservation->booking_code,
+          'snap_token' => $snapToken,
+        ],
+      ]);
+    } catch (BookingException $e) {
+      return response()->json([
+        'success' => false,
+        'message' => $e->getMessage(),
+        'data' => null,
+      ], 422);
+    } catch (Throwable $e) {
+      Log::error('Retry Snap token error', [
+        'booking_code' => $reservation->booking_code,
+        'error' => $e->getMessage(),
+      ]);
+
+      return response()->json([
+        'success' => false,
+        'message' => 'Unable to resume payment session right now.',
+        'data' => null,
+      ], 500);
+    }
+  }
+
+  public function cancelReservation(Request $request, Reservation $reservation): RedirectResponse
+  {
+    if ($reservation->user_id !== $request->user()->id) {
+      abort(403);
+    }
+
+    try {
+      $this->bookingService->cancelOrExpireReservation($reservation, 'cancelled');
+
+      return redirect()->route('visitor.tickets')
+        ->with('status', "Reservation {$reservation->booking_code} has been cancelled and plot availability released.");
+    } catch (BookingException $e) {
+      return redirect()->route('visitor.tickets')
+        ->with('error', $e->getMessage());
+    }
   }
 }
