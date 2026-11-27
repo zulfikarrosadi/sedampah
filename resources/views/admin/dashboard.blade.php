@@ -6,7 +6,11 @@
 <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8"
   x-data="adminHub({
          plots: @js($campingAreas),
-         defaultTab: @js($errors->has('image_file') || $errors->has('image_url') ? 'galleries' : ($errors->has('rental_price') && !$errors->has('capacity') ? 'facilities' : 'plots'))
+         defaultTab: @js(
+             ($errors->has('email') || $errors->has('role') || $errors->has('password')) ? 'users' :
+             (($errors->has('image_file') || $errors->has('image_url')) ? 'galleries' :
+             (($errors->has('rental_price') && !$errors->has('capacity')) ? 'facilities' : 'plots'))
+         )
      })">
 
   <!-- Header & Ekspor -->
@@ -83,6 +87,11 @@
       :class="activeTab === 'transactions' ? 'bg-forest-900 text-white' : 'bg-white text-stone-700 border border-stone-200'"
       class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
       Transaksi
+    </button>
+    <button type="button" @click="activeTab = 'users'"
+      :class="activeTab === 'users' ? 'bg-forest-900 text-white' : 'bg-white text-stone-700 border border-stone-200'"
+      class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer">
+      Users &amp; Staff ({{ $users->count() }})
     </button>
   </div>
 
@@ -460,6 +469,126 @@
       </table>
     </div>
     <div class="mt-4">{{ $reservations->links() }}</div>
+  </div>
+
+  <!-- TAB 5: USERS & STAFF MANAGEMENT -->
+  <div x-show="activeTab === 'users'" x-cloak class="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 space-y-6"
+    x-data="{ roleFilter: 'all', searchUser: '' }">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div>
+        <h2 class="font-serif text-xl font-bold text-forest-900">Akun Pengguna &amp; Staf</h2>
+        <p class="text-xs text-stone-500">Buat akun petugas gerbang, promosikan administrator, perbarui detail kontak, atau atur ulang kata sandi.</p>
+      </div>
+
+      <!-- Filter Peran & Pencarian Cepat -->
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <input type="text" x-model="searchUser" placeholder="Cari nama atau email..."
+          class="rounded-xl border-stone-300 text-xs w-48">
+        <select x-model="roleFilter" class="rounded-xl border-stone-300 text-xs font-semibold">
+          <option value="all">Semua Peran ({{ $users->count() }})</option>
+          <option value="admin">Admin ({{ $users->where('role', 'admin')->count() }})</option>
+          <option value="petugas">Petugas ({{ $users->where('role', 'petugas')->count() }})</option>
+          <option value="pengunjung">Pengunjung ({{ $users->where('role', 'pengunjung')->count() }})</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Formulir Tambah Pengguna / Staf Baru -->
+    <form method="POST" action="{{ route('admin.users.store') }}"
+      class="grid grid-cols-1 sm:grid-cols-6 gap-3 bg-stone-50 p-4 rounded-xl border border-stone-200/70 text-xs">
+      @csrf
+      <input name="name" placeholder="Nama Lengkap" required class="rounded-xl border-stone-300 text-xs">
+      <input type="email" name="email" placeholder="Alamat Email" required class="rounded-xl border-stone-300 text-xs">
+      <input name="phone" placeholder="Telepon / WhatsApp" class="rounded-xl border-stone-300 text-xs">
+      <select name="role" class="rounded-xl border-stone-300 text-xs font-semibold">
+        <option value="petugas">petugas (Staf Gerbang)</option>
+        <option value="admin">admin (Administrator)</option>
+        <option value="pengunjung">pengunjung (Pengunjung)</option>
+      </select>
+      <input type="password" name="password" placeholder="Kata Sandi Awal (min. 8)" required class="rounded-xl border-stone-300 text-xs">
+      <button type="submit" class="rounded-xl bg-terracotta-600 hover:bg-terracotta-700 text-white font-bold text-xs py-2.5 shadow cursor-pointer">
+        + Buat Akun
+      </button>
+    </form>
+
+    <!-- Tabel Direktori Pengguna -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="uppercase text-stone-400 border-b">
+          <tr>
+            <th class="py-2">Nama</th>
+            <th>Email</th>
+            <th>Telepon</th>
+            <th>Peran</th>
+            <th>Pemesanan</th>
+            <th>Kata Sandi Baru</th>
+            <th class="text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-stone-100">
+          @foreach($users as $managedUser)
+          <tr x-show="(roleFilter === 'all' || roleFilter === '{{ $managedUser->role }}') &&
+                                    (searchUser === '' || '{{ strtolower($managedUser->name . ' ' . $managedUser->email) }}'.includes(searchUser.toLowerCase()))">
+            <td class="py-2.5 pr-2">
+              <form id="update-user-{{ $managedUser->id }}" method="POST" action="{{ route('admin.users.update', $managedUser) }}">
+                @csrf @method('PATCH')
+              </form>
+              <div class="flex items-center gap-1.5">
+                <input form="update-user-{{ $managedUser->id }}" name="name" value="{{ $managedUser->name }}" required
+                  class="rounded-lg border-stone-300 text-xs w-40">
+                @if($managedUser->id === auth()->id())
+                <span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 text-[10px] font-bold">Anda</span>
+                @endif
+              </div>
+            </td>
+            <td class="pr-2">
+              <input form="update-user-{{ $managedUser->id }}" type="email" name="email" value="{{ $managedUser->email }}" required
+                class="rounded-lg border-stone-300 text-xs w-48">
+            </td>
+            <td class="pr-2">
+              <input form="update-user-{{ $managedUser->id }}" name="phone" value="{{ $managedUser->phone }}" placeholder="-"
+                class="rounded-lg border-stone-300 text-xs w-32">
+            </td>
+            <td class="pr-2">
+              <select form="update-user-{{ $managedUser->id }}" name="role"
+                @disabled($managedUser->id === auth()->id())
+                class="rounded-lg border-stone-300 text-xs font-semibold
+                {{ $managedUser->role === 'admin' ? 'bg-amber-50 text-amber-900' : ($managedUser->role === 'petugas' ? 'bg-emerald-50 text-emerald-900' : 'bg-white text-stone-700') }}">
+                <option value="admin" @selected($managedUser->role === 'admin')>admin</option>
+                <option value="petugas" @selected($managedUser->role === 'petugas')>petugas</option>
+                <option value="pengunjung" @selected($managedUser->role === 'pengunjung')>pengunjung</option>
+              </select>
+              @if($managedUser->id === auth()->id())
+              <input form="update-user-{{ $managedUser->id }}" type="hidden" name="role" value="{{ $managedUser->role }}">
+              @endif
+            </td>
+            <td class="pr-2 text-stone-500 font-medium">
+              {{ $managedUser->reservations_count }}
+            </td>
+            <td class="pr-2">
+              <input form="update-user-{{ $managedUser->id }}" type="password" name="password" placeholder="Kosongkan jika tetap"
+                class="rounded-lg border-stone-300 text-xs w-36">
+            </td>
+            <td class="text-right whitespace-nowrap space-x-1">
+              <button form="update-user-{{ $managedUser->id }}" type="submit"
+                class="px-3 py-1.5 rounded-lg bg-forest-900 text-white font-semibold hover:bg-forest-800 cursor-pointer">
+                Simpan
+              </button>
+              @if($managedUser->id !== auth()->id())
+              <form method="POST" action="{{ route('admin.users.destroy', $managedUser) }}" class="inline"
+                onsubmit="return confirm('Hapus pengguna {{ $managedUser->name }}?')">
+                @csrf @method('DELETE')
+                <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-700 font-semibold hover:bg-red-100 cursor-pointer">
+                  Hapus
+                </button>
+              </form>
+              @endif
+            </td>
+          </tr>
+          @endforeach
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 @endsection

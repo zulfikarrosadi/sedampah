@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class AdminDashboardController extends Controller
 {
@@ -48,13 +52,96 @@ class AdminDashboardController extends Controller
       ->latest()
       ->paginate(15);
 
+    $users = User::withCount('reservations')
+      ->orderByRaw("FIELD(role, 'admin', 'petugas', 'pengunjung')")
+      ->latest()
+      ->get();
+
     return view('admin.dashboard', compact(
       'stats',
       'campingAreas',
       'facilities',
       'galleries',
-      'reservations'
+      'reservations',
+      'users'
     ));
+  }
+
+  public function storeUser(Request $request): RedirectResponse
+  {
+    $validated = $request->validate([
+      'name' => ['required', 'string', 'max:255'],
+      'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
+      'phone' => ['nullable', 'string', 'max:20'],
+      'role' => ['required', Rule::in(['admin', 'petugas', 'pengunjung'])],
+      'password' => ['required', Password::defaults()],
+    ]);
+
+    User::create([
+      'name' => $validated['name'],
+      'email' => $validated['email'],
+      'phone' => $validated['phone'] ?? null,
+      'role' => $validated['role'],
+      'password' => Hash::make($validated['password']),
+      'email_verified_at' => now(),
+    ]);
+
+    return back()->with('success', "User '{$validated['name']}' ({$validated['role']}) created.");
+  }
+
+  public function updateUser(Request $request, User $user): RedirectResponse
+  {
+    $validated = $request->validate([
+      'name' => ['required', 'string', 'max:255'],
+      'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+      'phone' => ['nullable', 'string', 'max:20'],
+      'role' => ['required', Rule::in(['admin', 'petugas', 'pengunjung'])],
+      'password' => ['nullable', Password::defaults()],
+    ]);
+
+    // Prevent the currently logged-in admin from demoting themselves or locking out the last admin
+    if ($user->id === $request->user()->id && $validated['role'] !== 'admin') {
+      return back()->with('error', 'You cannot demote your own administrator account.');
+    }
+
+    if ($user->role === 'admin' && $validated['role'] !== 'admin' && User::where('role', 'admin')->count() <= 1) {
+      return back()->with('error', 'Cannot change role: at least one administrator must remain.');
+    }
+
+    $updateData = [
+      'name' => $validated['name'],
+      'email' => $validated['email'],
+      'phone' => $validated['phone'] ?? null,
+      'role' => $validated['role'],
+    ];
+
+    if (!empty($validated['password'])) {
+      $updateData['password'] = Hash::make($validated['password']);
+    }
+
+    $user->update($updateData);
+
+    return back()->with('success', "Updated user '{$user->name}'.");
+  }
+
+  public function destroyUser(Request $request, User $user): RedirectResponse
+  {
+    if ($user->id === $request->user()->id) {
+      return back()->with('error', 'You cannot delete your own currently active account.');
+    }
+
+    if ($user->role === 'admin' && User::where('role', 'admin')->count() <= 1) {
+      return back()->with('error', 'Cannot delete the last remaining administrator account.');
+    }
+
+    if ($user->reservations()->exists()) {
+      return back()->with('error', "Cannot delete '{$user->name}' because they have existing reservation history.");
+    }
+
+    $name = $user->name;
+    $user->delete();
+
+    return back()->with('success', "User '{$name}' deleted.");
   }
 
   public function storeCampingArea(Request $request): RedirectResponse

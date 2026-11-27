@@ -59,6 +59,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
   // Reports
   Route::get('/export-csv', [AdminDashboardController::class, 'exportCsv'])->name('export.csv');
+
+  // User Management CRUD
+  Route::post('/users', [AdminDashboardController::class, 'storeUser'])->name('users.store');
+  Route::patch('/users/{user}', [AdminDashboardController::class, 'updateUser'])->name('users.update');
+  Route::delete('/users/{user}', [AdminDashboardController::class, 'destroyUser'])->name('users.destroy');
 });
 
 require __DIR__ . '/auth.php';
